@@ -10,11 +10,13 @@ const elements = {
 };
 const currencyCodes = new Set(CURRENCIES.map(currency => currency.code));
 const key = 'priceconverter:v1';
+const hasRate = code => Number.isFinite(state.cache?.rates?.[code]) && state.cache.rates[code] > 0;
+const searchable = value => value.toLocaleLowerCase('cs').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 
 function restore() {
   try {
     const saved = JSON.parse(localStorage.getItem(key) || '{}');
-    const selected = Array.isArray(saved.selected) ? [...new Set(saved.selected.filter(code => currencyCodes.has(code)))].slice(0, 22) : ['CZK','EUR','USD'];
+    const selected = Array.isArray(saved.selected) ? [...new Set(saved.selected.filter(code => currencyCodes.has(code)))] : ['CZK','EUR','USD'];
     const cache = saved.cache;
     const rates = cache && Number.isFinite(cache.updatedAt) && cache.updatedAt <= Date.now() && cache.rates && typeof cache.rates === 'object' ? cache : null;
     return {selected, unit:saved.unit === 'SATS' ? 'SATS' : 'BTC', cache:rates};
@@ -39,6 +41,9 @@ function updateValues() {
   if (state.anchor !== 'BTC') elements.btc.value = format(btcValue, 'BTC');
   for (const input of elements.list.querySelectorAll('input[data-code]')) {
     const code = input.dataset.code;
+    input.disabled = !hasRate(code);
+    input.placeholder = input.disabled ? 'Bez kurzu' : '';
+    input.title = input.disabled ? `Kurz pro ${code} momentálně není dostupný` : '';
     if (state.anchor !== code) input.value = format(fromBtc(state.btc, code, state.cache?.rates || {}), code);
   }
 }
@@ -89,15 +94,15 @@ function renderRows() {
 
 function renderOptions() {
   elements.options.replaceChildren();
-  const query = elements.search.value.trim().toLocaleLowerCase('cs');
-  const matches = CURRENCIES.filter(item => !state.selected.includes(item.code) && `${item.code} ${item.name}`.toLocaleLowerCase('cs').includes(query));
+  const query = searchable(elements.search.value.trim());
+  const matches = CURRENCIES.filter(item => !state.selected.includes(item.code) && searchable(`${item.code} ${item.name}`).includes(query));
   if (!matches.length) {
     const empty = document.createElement('p'); empty.className = 'option-empty'; empty.textContent = 'Žádná další měna neodpovídá hledání.'; elements.options.append(empty);
   }
   for (const currency of matches) {
     const option = document.createElement('button'); option.type = 'button'; option.className = 'option-button';
     const icon = document.createElement('span'); icon.className = 'currency-icon'; icon.textContent = currency.flag; icon.setAttribute('aria-hidden','true');
-    const copy = document.createElement('span'); const code = document.createElement('strong'); code.textContent = currency.code; const name = document.createElement('small'); name.textContent = currency.name; copy.append(code,name);
+    const copy = document.createElement('span'); const code = document.createElement('strong'); code.textContent = currency.code; const name = document.createElement('small'); name.textContent = state.cache && !hasRate(currency.code) ? `${currency.name} · bez kurzu` : currency.name; copy.append(code,name);
     const plus = document.createElement('span'); plus.className = 'option-plus'; plus.textContent = '+'; plus.setAttribute('aria-hidden','true');
     option.append(icon,copy,plus);
     option.addEventListener('click', () => { state.selected.push(currency.code); save(); renderRows(); elements.dialog.close(); elements.search.value = ''; renderOptions(); });
@@ -138,6 +143,9 @@ async function refresh() {
   try {
     state.cache = await fetchRates();
     save();
+    if (state.anchor !== 'BTC' && !hasRate(state.anchor)) {
+      state.anchor = 'BTC'; state.raw = format(fromBtc(state.btc,'BTC',{},state.unit),'BTC'); elements.btc.value = state.raw;
+    }
     if (state.anchor !== 'BTC') recalculate(state.anchor,state.raw);
     else updateValues();
   } catch {

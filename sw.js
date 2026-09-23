@@ -1,5 +1,5 @@
-const CACHE = 'priceconverter-shell-v2';
-const SHELL = ['./','./index.html','./style.css','./app.js','./rates.js','./manifest.webmanifest','./icons/icon.svg','./icons/icon-192.png','./icons/icon-512.png'];
+const CACHE = 'priceconverter-shell-v3';
+const SHELL = ['./','./index.html','./style.css','./app.js','./rates.js','./currencies.js','./manifest.webmanifest','./icons/icon.svg','./icons/icon-192.png','./icons/icon-512.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));

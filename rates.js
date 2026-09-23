@@ -50,7 +50,7 @@ export const SOURCES = [
 export async function fetchRates(fetchImpl = fetch) {
   const settled = await Promise.allSettled(SOURCES.map(async source => {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 9000);
+    const timer = setTimeout(() => controller.abort(), 12000);
     try {
       const response = await fetchImpl(source.url, {signal:controller.signal, cache:'no-store'});
       if (!response.ok) throw new Error(`${source.name}: HTTP ${response.status}`);

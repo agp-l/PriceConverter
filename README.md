@@ -4,7 +4,7 @@ Samostatná mobilně pojatá webová aplikace pro okamžitý převod mezi BTC, s
 
 ## Použití
 
-Otevřete `index.html` přes HTTPS nebo na lokálním serveru. Zadejte částku do libovolného pole: ostatní řádky se hned přepočítají. Přepínač BTC / SATS převádí bitcoinovou částku, měny můžete přidávat a odebírat. Rozložení a poslední úspěšně načtené kurzy se ukládají v prohlížeči.
+Otevřete `index.html` přes HTTPS nebo na lokálním serveru. Zadejte částku do libovolného pole: ostatní řádky se hned přepočítají. Přepínač BTC / SATS převádí bitcoinovou částku, měny můžete přidávat a odebírat. Katalog obsahuje přes 160 měnových kódů včetně PYG; chybějící kurz se v seznamu jasně označí a jeho pole nelze upravovat. Rozložení a poslední úspěšně načtené kurzy se ukládají v prohlížeči.
 
 Pro lokální spuštění například:
 
