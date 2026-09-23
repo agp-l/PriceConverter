@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#173d31">
+  <meta name="theme-color" content="#392065">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="VexlCalc">
@@ -18,14 +18,9 @@
   <div class="app-shell">
     <main class="app" id="app">
       <header class="app-header">
+        <button id="menu-toggle" class="menu-toggle" type="button" aria-label="Otevřít nabídku" aria-controls="app-menu" aria-haspopup="dialog" data-i18n-aria-label="openMenu"><span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span></button>
         <div class="brand-mark" aria-hidden="true">₿</div>
         <div class="brand-copy"><span class="eyebrow" data-i18n="tagline">BTC & MĚNY PO RUCE</span><h1>VexlCalc<span class="title-dot">.</span></h1></div>
-        <label class="sr-only" for="language-switch" data-i18n="languageLabel">Jazyk aplikace</label>
-        <select id="language-switch" class="language-select" aria-label="Jazyk aplikace" data-i18n-aria-label="languageLabel">
-          <option value="auto" data-i18n="automatic">Auto</option>
-          <option value="cs">Čeština</option>
-          <option value="en">English</option>
-        </select>
       </header>
 
       <div class="status-line" role="status" aria-live="polite"><span class="status-dot" id="status-dot"></span><span id="status-text" data-i18n="loading">Načítám kurzy…</span>
@@ -34,12 +29,9 @@
         </button>
       </div>
 
-      <div class="mode-tabs" role="tablist" aria-label="Režim kalkulačky" data-i18n-aria-label="modeLabel">
-        <button type="button" role="tab" id="tab-convert" aria-selected="true" aria-controls="convert-pane" data-i18n="converterTab">Převodník</button>
-        <button type="button" role="tab" id="tab-trade" aria-selected="false" aria-controls="trade-pane" data-i18n="tradeTab">Osobní směna</button>
-      </div>
+      <div class="screen-heading"><span class="eyebrow" data-i18n="screenEyebrow">MOJE KALKULAČKA</span><h2 id="screen-title">Převodník</h2></div>
 
-      <div id="convert-pane" role="tabpanel" aria-labelledby="tab-convert">
+      <div id="convert-pane" class="screen-pane" role="region" aria-labelledby="screen-title">
       <section class="bitcoin-card" aria-labelledby="bitcoin-label">
         <div class="card-top"><span class="card-kicker" id="bitcoin-label">BITCOIN</span><span class="bitcoin-emblem" aria-hidden="true">₿</span></div>
         <div class="bitcoin-input-wrap"><input id="btc-input" class="bitcoin-input" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="1" aria-label="Částka v bitcoinu nebo satoshi" data-i18n-aria-label="bitcoinInput"><span id="btc-unit" class="input-unit">BTC</span></div>
@@ -47,11 +39,15 @@
       </section>
 
       <section class="currencies" aria-labelledby="currencies-heading">
-        <div class="section-heading"><div><span class="eyebrow" data-i18n="overview">RYCHLÝ PŘEHLED</span><h2 id="currencies-heading" data-i18n="myCurrencies">Moje měny</h2></div><span id="currency-count" class="count-badge">0</span></div>
+        <div class="section-heading"><div><span class="eyebrow" data-i18n="overview">RYCHLÝ PŘEHLED</span><h2 id="currencies-heading" data-i18n="myCurrencies">Moje měny</h2></div><div class="currency-actions"><span id="currency-count" class="count-badge">0</span><button type="button" id="sort-currencies" class="sort-toggle" aria-pressed="false">Seřadit</button></div></div>
+        <p id="sort-hint" class="sort-hint" data-i18n="sortHint" hidden>Pořadí změníte šipkami. Ukládá se automaticky.</p>
         <div id="currency-list" class="currency-list"></div>
         <button type="button" id="add-currency" class="add-button"><span class="plus" aria-hidden="true">+</span> <span data-i18n="addCurrency">Přidat měnu</span> <span class="add-arrow" aria-hidden="true">↗</span></button>
       </section>
 
+      </div>
+
+      <div id="travel-pane" class="screen-pane" role="region" aria-labelledby="screen-title" hidden>
       <section class="travel-card" aria-labelledby="travel-heading">
         <div class="section-heading"><div><span class="eyebrow" data-i18n="travelEyebrow">NA CESTÁCH</span><h2 id="travel-heading" data-i18n="travelHeading">Měna za měnu</h2></div><span class="travel-emblem" aria-hidden="true">↔</span></div>
         <label class="field-label" for="travel-amount" data-i18n="travelAmount">Kolik převést</label>
@@ -62,7 +58,7 @@
       </section>
       </div>
 
-      <div id="trade-pane" role="tabpanel" aria-labelledby="tab-trade" hidden>
+      <div id="trade-pane" class="screen-pane" role="region" aria-labelledby="screen-title" hidden>
         <section class="trade-intro"><span class="eyebrow" data-i18n="tradeEyebrow">KALKULACE SMĚNY</span><h2 data-i18n="tradeHeading">Kolik si domluvíte?</h2><p data-i18n="tradeIntro">Vyberte směr směny a zadejte svou výhodu oproti referenční ceně. Výpočet se přizpůsobí automaticky.</p></section>
         <div class="trade-side" role="group" aria-label="Směr obchodu" data-i18n-aria-label="tradeSideLabel"><button type="button" id="dealer-buy" class="selected" aria-pressed="true" data-i18n="dealerBuy">Nakupuji BTC</button><button type="button" id="dealer-sell" aria-pressed="false" data-i18n="dealerSell">Prodávám BTC</button></div>
         <p id="trade-explanation" class="trade-explanation"></p>
@@ -82,6 +78,15 @@
 
       <footer class="app-footer"><button type="button" id="install-button" class="install-button"><span class="install-icon" aria-hidden="true">↧</span><span data-i18n="installButton">Nainstalovat aplikaci</span><span aria-hidden="true">↗</span></button><div class="footer-rule"></div><span data-i18n="indicative">Kurzy jsou orientační</span><span aria-hidden="true">✳</span><span>1 BTC = 100 000 000 sats</span></footer>
     </main>
+    <dialog id="app-menu" class="app-menu" aria-labelledby="menu-title">
+      <div class="menu-header"><span class="menu-monogram" aria-hidden="true">₿</span><div><span class="eyebrow" data-i18n="menuEyebrow">VEXLCALC</span><h2 id="menu-title" data-i18n="menuTitle">Nabídka</h2></div><button id="menu-close" class="menu-close" type="button" aria-label="Zavřít nabídku" data-i18n-aria-label="closeMenu">×</button></div>
+      <nav class="drawer-nav" aria-label="Obrazovky aplikace" data-i18n-aria-label="modeLabel">
+        <button type="button" id="tab-convert" data-mode="convert" aria-controls="convert-pane" aria-current="page"><span class="nav-icon" aria-hidden="true">₿</span><span data-i18n="converterTab">Převodník</span><span class="nav-arrow" aria-hidden="true">›</span></button>
+        <button type="button" id="tab-travel" data-mode="travel" aria-controls="travel-pane"><span class="nav-icon" aria-hidden="true">↔</span><span data-i18n="travelHeading">Měna za měnu</span><span class="nav-arrow" aria-hidden="true">›</span></button>
+        <button type="button" id="tab-trade" data-mode="trade" aria-controls="trade-pane"><span class="nav-icon" aria-hidden="true">%</span><span data-i18n="tradeTab">Osobní směna</span><span class="nav-arrow" aria-hidden="true">›</span></button>
+      </nav>
+      <div class="menu-footer"><label for="language-switch" data-i18n="languageLabel">Jazyk aplikace</label><select id="language-switch" class="language-select" aria-label="Jazyk aplikace" data-i18n-aria-label="languageLabel"><option value="auto" data-i18n="automatic">Auto</option><option value="cs">Čeština</option><option value="en">English</option></select></div>
+    </dialog>
   </div>
 
   <dialog id="currency-dialog" class="currency-dialog" aria-labelledby="dialog-title"><div class="dialog-header"><div><span class="eyebrow" data-i18n="settings">NASTAVENÍ</span><h2 id="dialog-title" data-i18n="addCurrency">Přidat měnu</h2></div><button type="button" id="close-dialog" class="icon-button" aria-label="Zavřít" data-i18n-aria-label="close">×</button></div><label class="search-label" for="currency-search" data-i18n="searchLabel">Hledat podle názvu nebo kódu</label><input id="currency-search" class="search-input" type="search" autocomplete="off" placeholder="Třeba PLN nebo zlotý" data-i18n-placeholder="searchPlaceholder"><div id="currency-options" class="currency-options"></div></dialog>

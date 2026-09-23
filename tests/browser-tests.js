@@ -121,6 +121,23 @@ await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
     const option = [...doc.querySelectorAll('.option-button')].find(button => button.textContent.includes('PYG'));
     assert(option, 'PYG není v nabídce'); option.click();
     assert([...doc.querySelectorAll('.currency-code')].some(code => code.textContent === 'PYG'), 'PYG se nepřidalo');
+    doc.querySelector('#sort-currencies').click();
+    assert(doc.querySelector('#sort-currencies').getAttribute('aria-pressed') === 'true', 'Režim řazení');
+    doc.querySelector('[data-code="PYG"] .sort-up').click();
+    doc.querySelector('[data-code="PYG"] .sort-up').click();
+    doc.querySelector('[data-code="PYG"] .sort-up').click();
+    assert(doc.querySelector('.currency-row').dataset.code === 'PYG', 'Přesun měny nahoru');
+    assert(JSON.parse(localStorage.getItem(key)).selected[0] === 'PYG', 'Pořadí se ukládá');
+    doc.querySelector('#sort-currencies').click();
+    doc.querySelector('#menu-toggle').click();
+    assert(doc.querySelector('#app-menu').open && doc.querySelector('#menu-toggle').getAttribute('aria-expanded') === 'true', 'Otevření nabídky');
+    doc.querySelector('#tab-travel').click();
+    assert(!doc.querySelector('#travel-pane').hidden && doc.querySelector('#convert-pane').hidden && !doc.querySelector('#app-menu').open, 'Samostatný cestovní převod');
+    const from = doc.querySelector('#travel-from'); const to = doc.querySelector('#travel-to');
+    const originalFrom = from.value; doc.querySelector('#travel-swap').click();
+    assert(to.value === originalFrom, 'Prohození cestovních měn');
+    assert(JSON.parse(localStorage.getItem(key)).mode === 'travel', 'Obnovení cestovní obrazovky');
+    doc.querySelector('#menu-toggle').click();
     doc.querySelector('#tab-trade').click();
     assert(!doc.querySelector('#trade-pane').hidden && doc.querySelector('#convert-pane').hidden, 'Režim směny');
     const margin = doc.querySelector('#margin-percent');
@@ -152,10 +169,9 @@ await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
     const unit = doc.querySelector('#dealer-unit');
     unit.value = 'SATS'; unit.dispatchEvent(new Event('change', {bubbles:true}));
     assert(parseAmount(doc.querySelector('#dealer-amount').value, 'en') === 1_000_000, 'Přepnutí částky na SATS');
+    doc.querySelector('#menu-toggle').click();
     doc.querySelector('#tab-convert').click();
-    const from = doc.querySelector('#travel-from'); const to = doc.querySelector('#travel-to');
-    const originalFrom = from.value; doc.querySelector('#travel-swap').click();
-    assert(to.value === originalFrom, 'Prohození cestovních měn');
+    assert(!doc.querySelector('#convert-pane').hidden && doc.querySelector('#travel-pane').hidden, 'Návrat do převodníku');
   } finally {
     iframe.remove();
     if (previous === null) localStorage.removeItem(key);

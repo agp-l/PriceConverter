@@ -35,7 +35,7 @@ export function restoreSettings(json) {
   const marginPercent = savedPercent(saved.marginPercent, savedPercent(legacyMargin, 2));
   return {selected, unit:saved.unit === 'SATS' ? 'SATS' : 'BTC', cache,
     languageMode:['cs', 'en'].includes(saved.languageMode) ? saved.languageMode : 'auto',
-    mode:saved.mode === 'trade' ? 'trade' : 'convert',
+    mode:['convert', 'travel', 'trade'].includes(saved.mode) ? saved.mode : 'convert',
     tradeCurrency:savedCurrency(saved.tradeCurrency, 'CZK'),
     marginPercent,
     dealerSide:saved.dealerSide === 'sell' ? 'sell' : 'buy',
@@ -49,11 +49,14 @@ export class ConverterApp {
     this.win = win;
     this.elements = Object.fromEntries(Object.entries({
       btc:'btc-input', unit:'btc-unit', caption:'bitcoin-caption', btcButton:'unit-btc', satsButton:'unit-sats',
-      list:'currency-list', count:'currency-count', status:'status-text', dot:'status-dot', refresh:'refresh',
+      list:'currency-list', count:'currency-count', sort:'sort-currencies', sortHint:'sort-hint',
+      status:'status-text', dot:'status-dot', refresh:'refresh',
       language:'language-switch', add:'add-currency', dialog:'currency-dialog', close:'close-dialog',
       search:'currency-search', options:'currency-options', install:'install-button',
+      menu:'app-menu', menuToggle:'menu-toggle', menuClose:'menu-close', screenTitle:'screen-title',
       installDialog:'install-dialog', installClose:'close-install', installInstructions:'install-instructions',
-      tabConvert:'tab-convert', tabTrade:'tab-trade', paneConvert:'convert-pane', paneTrade:'trade-pane',
+      tabConvert:'tab-convert', tabTravel:'tab-travel', tabTrade:'tab-trade',
+      paneConvert:'convert-pane', paneTravel:'travel-pane', paneTrade:'trade-pane',
       travelAmount:'travel-amount', travelFrom:'travel-from', travelTo:'travel-to', travelSwap:'travel-swap',
       travelValue:'travel-value', travelRate:'travel-rate',
       dealerBuy:'dealer-buy', dealerSell:'dealer-sell', tradeExplanation:'trade-explanation',
@@ -73,6 +76,7 @@ export class ConverterApp {
       anchor:'BTC', raw:'1', btc:stored.unit === 'SATS' ? 1e-8 : 1, busy:false, error:false};
     this.currencies = new Map();
     this.installPrompt = null;
+    this.sorting = false;
     this.setFormatters();
     this.tradeFiatRaw = '10000';
     this.tradeBitcoinRaw = stored.unit === 'SATS' ? '1000000' : '0.01';
@@ -136,6 +140,10 @@ export class ConverterApp {
     const {state, elements} = this;
     elements.list.replaceChildren();
     elements.count.textContent = String(state.selected.length);
+    elements.sort.hidden = state.selected.length < 2 && !this.sorting;
+    elements.sort.textContent = this.tr(this.sorting ? 'sortDone' : 'sortCurrencies');
+    elements.sort.setAttribute('aria-pressed', String(this.sorting));
+    elements.sortHint.hidden = !this.sorting;
     if (!state.selected.length) {
       const empty = this.doc.createElement('p');
       empty.className = 'empty-state'; empty.textContent = this.tr('emptyState');
@@ -144,6 +152,8 @@ export class ConverterApp {
     for (const code of state.selected) {
       const currency = this.currencies.get(code);
       const row = this.doc.createElement('div'); row.className = 'currency-row';
+      row.dataset.code = code;
+      row.classList.toggle('sorting', this.sorting);
       const icon = this.doc.createElement('span'); icon.className = 'currency-icon'; icon.setAttribute('aria-hidden', 'true'); icon.textContent = currency.flag;
       const info = this.doc.createElement('div'); info.className = 'currency-info';
       const label = this.doc.createElement('strong'); label.className = 'currency-code'; label.textContent = code;
@@ -158,13 +168,35 @@ export class ConverterApp {
       const remove = this.doc.createElement('button'); remove.type = 'button'; remove.className = 'remove-button'; remove.textContent = '×';
       remove.title = this.tr('remove', {name:currency.name}); remove.setAttribute('aria-label', remove.title);
       remove.addEventListener('click', () => this.removeCurrency(code));
-      row.append(icon, info, value, remove); elements.list.append(row);
+      const position = state.selected.indexOf(code);
+      const controls = this.doc.createElement('div'); controls.className = 'sort-controls';
+      for (const [direction, symbol] of [[-1, '↑'], [1, '↓']]) {
+        const button = this.doc.createElement('button');
+        button.type = 'button'; button.className = direction < 0 ? 'sort-up' : 'sort-down';
+        button.textContent = symbol;
+        button.setAttribute('aria-label', this.tr(direction < 0 ? 'moveUp' : 'moveDown', {code}));
+        button.disabled = direction < 0 ? position === 0 : position === state.selected.length - 1;
+        button.addEventListener('click', () => this.moveCurrency(code, direction));
+        controls.append(button);
+      }
+      row.append(icon, info, value, remove, controls); elements.list.append(row);
     }
     this.updateValues();
     if (state.anchor !== 'BTC') {
       const input = [...elements.list.querySelectorAll('input[data-code]')].find(item => item.dataset.code === state.anchor);
       if (input) input.value = state.raw;
     }
+  }
+
+  moveCurrency(code, direction) {
+    const {selected} = this.state;
+    const position = selected.indexOf(code);
+    const next = position + direction;
+    if (!this.sorting || position < 0 || next < 0 || next >= selected.length) return;
+    [selected[position], selected[next]] = [selected[next], selected[position]];
+    this.save(); this.renderRows();
+    const row = [...this.elements.list.querySelectorAll('.currency-row')].find(item => item.dataset.code === code);
+    row?.querySelector(direction < 0 ? '.sort-up:not(:disabled),.sort-down' : '.sort-down:not(:disabled),.sort-up')?.focus();
   }
 
   removeCurrency(code) {
@@ -220,14 +252,18 @@ export class ConverterApp {
   }
 
   setMode(mode) {
-    this.state.mode = mode === 'trade' ? 'trade' : 'convert';
-    const trade = this.state.mode === 'trade';
-    this.elements.paneConvert.hidden = trade;
-    this.elements.paneTrade.hidden = !trade;
-    this.elements.tabConvert.setAttribute('aria-selected', String(!trade));
-    this.elements.tabTrade.setAttribute('aria-selected', String(trade));
-    this.elements.tabConvert.tabIndex = trade ? -1 : 0;
-    this.elements.tabTrade.tabIndex = trade ? 0 : -1;
+    this.state.mode = ['convert', 'travel', 'trade'].includes(mode) ? mode : 'convert';
+    for (const [name, pane, button, title] of [
+      ['convert', this.elements.paneConvert, this.elements.tabConvert, 'converterTab'],
+      ['travel', this.elements.paneTravel, this.elements.tabTravel, 'travelHeading'],
+      ['trade', this.elements.paneTrade, this.elements.tabTrade, 'tradeTab']
+    ]) {
+      const selected = this.state.mode === name;
+      pane.hidden = !selected;
+      if (selected) button.setAttribute('aria-current', 'page');
+      else button.removeAttribute('aria-current');
+      if (selected) this.elements.screenTitle.textContent = this.tr(title);
+    }
     this.save();
   }
 
@@ -428,22 +464,30 @@ export class ConverterApp {
     elements.dealerAmount.value = this.state.dealerKind === 'fiat' ? this.tradeFiatRaw : this.tradeBitcoinRaw;
     elements.btc.addEventListener('input', () => this.recalculate('BTC', elements.btc.value));
     elements.btc.addEventListener('focus', () => elements.btc.select());
+    elements.menuToggle.addEventListener('click', () => {
+      elements.menu.showModal();
+      elements.menuToggle.setAttribute('aria-expanded', 'true');
+      elements.menu.querySelector('[aria-current="page"]')?.focus();
+    });
+    elements.menuClose.addEventListener('click', () => elements.menu.close());
+    elements.menu.addEventListener('close', () => elements.menuToggle.setAttribute('aria-expanded', 'false'));
+    elements.menu.addEventListener('click', event => { if (event.target === elements.menu) elements.menu.close(); });
     elements.btcButton.addEventListener('click', () => this.setUnit('BTC'));
     elements.satsButton.addEventListener('click', () => this.setUnit('SATS'));
     elements.refresh.addEventListener('click', () => this.refresh());
     elements.language.addEventListener('change', () => { this.state.languageMode = elements.language.value; this.applyLanguage(); this.save(); });
     elements.add.addEventListener('click', () => { this.renderOptions(); elements.dialog.showModal(); elements.search.focus(); });
+    elements.sort.addEventListener('click', () => { this.sorting = !this.sorting; this.renderRows(); elements.sort.focus(); });
     elements.close.addEventListener('click', () => elements.dialog.close());
     elements.dialog.addEventListener('click', event => { if (event.target === elements.dialog) elements.dialog.close(); });
     elements.search.addEventListener('input', () => this.renderOptions());
-    elements.tabConvert.addEventListener('click', () => this.setMode('convert'));
-    elements.tabTrade.addEventListener('click', () => this.setMode('trade'));
-    for (const tab of [elements.tabConvert, elements.tabTrade]) tab.addEventListener('keydown', event => {
-      if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
-      event.preventDefault();
-      const next = tab === elements.tabConvert ? elements.tabTrade : elements.tabConvert;
-      this.setMode(next === elements.tabTrade ? 'trade' : 'convert'); next.focus();
-    });
+    for (const [button, mode] of [[elements.tabConvert, 'convert'], [elements.tabTravel, 'travel'], [elements.tabTrade, 'trade']]) {
+      button.addEventListener('click', () => {
+        this.setMode(mode);
+        if (elements.menu.open) elements.menu.close();
+        elements.menuToggle.focus();
+      });
+    }
     elements.travelAmount.addEventListener('input', () => this.renderTravel());
     elements.travelFrom.addEventListener('change', () => { this.state.travelFrom = elements.travelFrom.value; this.save(); this.renderTravel(); });
     elements.travelTo.addEventListener('change', () => { this.state.travelTo = elements.travelTo.value; this.save(); this.renderTravel(); });
