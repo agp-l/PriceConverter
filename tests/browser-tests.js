@@ -1,7 +1,7 @@
 import {detectLanguage, resolveLanguage, t} from '../i18n.js';
 import {getCurrencies} from '../currencies.js';
 import {averageRates, parseAmount, btcFrom, fromBtc, fetchRates} from '../rates.js';
-import {restoreSettings} from '../app.js';
+import {restoreSettings, ConverterApp} from '../app.js';
 import {parsePercent, tradeQuote, travelQuote} from '../quotes.js';
 
 const results = document.querySelector('#results');
@@ -96,6 +96,18 @@ await check('Cestovní přepočet mezi fiat měnami', () => {
   assert(travelQuote(100, 'CZK', 'PYG', {CZK:2_000_000}) === null, 'Chybějící kurz');
 });
 
+await check('Kopírování darovacích údajů a ruční záloha', async () => {
+  let copied = '';
+  const input = {value:'  bc1ptest  ', focus() { this.focused = true; }, select() { this.selected = true; }};
+  const app = {win:{navigator:{clipboard:{writeText:async value => { copied = value; }}}},
+    elements:{copyStatus:{textContent:''}}, tr:key => t('en', key)};
+  await ConverterApp.prototype.copyDonation.call(app, input);
+  assert(copied === 'bc1ptest' && app.elements.copyStatus.textContent === 'Copied.', 'Kopírování');
+  app.win.navigator.clipboard = undefined;
+  await ConverterApp.prototype.copyDonation.call(app, input);
+  assert(input.focused && input.selected && app.elements.copyStatus.textContent.includes('manually'), 'Ruční kopírování');
+});
+
 await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
   const key = 'priceconverter:v1';
   const previous = localStorage.getItem(key);
@@ -133,8 +145,17 @@ await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
     doc.querySelector('#sort-currencies').click();
     doc.querySelector('#menu-toggle').click();
     assert(doc.querySelector('#app-menu').open && doc.querySelector('#menu-toggle').getAttribute('aria-expanded') === 'true', 'Otevření nabídky');
+    assert(doc.querySelector('#app-menu #install-button') && !doc.querySelector('.app-footer'), 'Instalace v menu');
+    assert(doc.querySelector('#app-menu a[href="https://github.com/agp-l/PriceConverter"]'), 'Otevřený zdrojový kód');
+    doc.querySelector('#donate-button').click();
+    assert(doc.querySelector('#donate-dialog').open && !doc.querySelector('#app-menu').open, 'Darovací dialog');
+    assert(doc.querySelector('#donate-btc').value === 'bc1p8p5quw4s8t2ugspr2lf4mz5hqypw52az4hexp9a4nt80kyjxuayqqde2d7', 'Bitcoin adresa');
+    assert(doc.querySelector('#donate-lightning').value.startsWith('lno1') && doc.querySelector('#donate-lightning').value.length > 250, 'Lightning nabídka');
+    doc.querySelector('#close-donate').click();
+    doc.querySelector('#menu-toggle').click();
     doc.querySelector('#tab-travel').click();
     assert(!doc.querySelector('#travel-pane').hidden && doc.querySelector('#convert-pane').hidden && !doc.querySelector('#app-menu').open, 'Samostatný cestovní převod');
+    assert(doc.querySelector('#screen-title').textContent === 'Currency to currency', 'Titulek v horní liště');
     const from = doc.querySelector('#travel-from'); const to = doc.querySelector('#travel-to');
     const originalFrom = from.value; doc.querySelector('#travel-swap').click();
     assert(to.value === originalFrom, 'Prohození cestovních měn');

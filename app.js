@@ -48,18 +48,21 @@ export class ConverterApp {
     this.doc = doc;
     this.win = win;
     this.elements = Object.fromEntries(Object.entries({
-      btc:'btc-input', unit:'btc-unit', caption:'bitcoin-caption', btcButton:'unit-btc', satsButton:'unit-sats',
+      btc:'btc-input', unit:'btc-unit', btcButton:'unit-btc', satsButton:'unit-sats',
       list:'currency-list', count:'currency-count', sort:'sort-currencies', sortHint:'sort-hint',
       status:'status-text', dot:'status-dot', refresh:'refresh',
       language:'language-switch', add:'add-currency', dialog:'currency-dialog', close:'close-dialog',
       search:'currency-search', options:'currency-options', install:'install-button',
       menu:'app-menu', menuToggle:'menu-toggle', menuClose:'menu-close', screenTitle:'screen-title',
+      donateOpen:'donate-button', donateDialog:'donate-dialog', donateClose:'close-donate',
+      donateBtc:'donate-btc', donateLightning:'donate-lightning', copyBtc:'copy-btc',
+      copyLightning:'copy-lightning', copyStatus:'copy-status',
       installDialog:'install-dialog', installClose:'close-install', installInstructions:'install-instructions',
       tabConvert:'tab-convert', tabTravel:'tab-travel', tabTrade:'tab-trade',
       paneConvert:'convert-pane', paneTravel:'travel-pane', paneTrade:'trade-pane',
       travelAmount:'travel-amount', travelFrom:'travel-from', travelTo:'travel-to', travelSwap:'travel-swap',
       travelValue:'travel-value', travelRate:'travel-rate',
-      dealerBuy:'dealer-buy', dealerSell:'dealer-sell', tradeExplanation:'trade-explanation',
+      dealerBuy:'dealer-buy', dealerSell:'dealer-sell',
       dealerCurrency:'dealer-currency', marginPercent:'margin-percent', marginPreview:'margin-preview',
       marketSource:'market-source', marketTools:'market-tools', manualMarketWrap:'manual-market-wrap',
       manualMarket:'manual-market', marketSourceHint:'market-source-hint',
@@ -287,14 +290,14 @@ export class ConverterApp {
     elements.dealerSell.classList.toggle('selected', !buying);
     elements.dealerBuy.setAttribute('aria-pressed', String(buying));
     elements.dealerSell.setAttribute('aria-pressed', String(!buying));
-    elements.tradeExplanation.textContent = this.tr(buying ? 'buyExplanation' : 'sellExplanation', {currency:state.tradeCurrency});
     elements.offerFiatLabel.textContent = this.tr(buying ? 'fiatPaid' : 'fiatReceived');
     elements.offerBtcLabel.textContent = this.tr(buying ? 'btcReceived' : 'btcDelivered');
     const manual = this.marketSource === 'manual';
     elements.marketSource.value = this.marketSource;
     elements.manualMarketWrap.hidden = !manual;
     elements.marketTools.classList.toggle('manual-active', manual);
-    elements.marketSourceHint.textContent = this.tr(manual ? 'manualMarketHint' : 'automaticMarketHint');
+    elements.marketSourceHint.hidden = !manual;
+    if (manual) elements.marketSourceHint.textContent = this.tr('manualMarketHint');
     const amount = parseAmount(elements.dealerAmount.value, state.language);
     const marginPercent = parsePercent(elements.marginPercent.value, state.language);
     const percentText = marginPercent === null ? '' : new Intl.NumberFormat(state.language === 'cs' ? 'cs-CZ' : 'en-US',
@@ -333,7 +336,6 @@ export class ConverterApp {
   syncUnit() {
     const {state, elements} = this;
     elements.unit.textContent = state.unit;
-    elements.caption.textContent = this.tr(state.unit === 'SATS' ? 'satsCaption' : 'bitcoinCaption');
     for (const [button, active] of [[elements.btcButton, state.unit === 'BTC'], [elements.satsButton, state.unit === 'SATS']]) {
       button.classList.toggle('selected', active); button.setAttribute('aria-pressed', String(active));
     }
@@ -434,6 +436,17 @@ export class ConverterApp {
     catch { this.updateInstallInstructions(); this.elements.installDialog.showModal(); }
   }
 
+  async copyDonation(input) {
+    try {
+      if (!this.win.navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+      await this.win.navigator.clipboard.writeText(input.value.trim());
+      this.elements.copyStatus.textContent = this.tr('copied');
+    } catch {
+      input.focus(); input.select();
+      this.elements.copyStatus.textContent = this.tr('copyManually');
+    }
+  }
+
   async refresh() {
     const {state, elements} = this;
     if (state.busy) return;
@@ -526,7 +539,21 @@ export class ConverterApp {
     });
     elements.dealerKind.addEventListener('change', () => this.changeDealerKind(elements.dealerKind.value));
     elements.dealerUnit.addEventListener('change', () => this.setUnit(elements.dealerUnit.value));
-    elements.install.addEventListener('click', () => this.promptInstall());
+    elements.install.addEventListener('click', () => {
+      elements.menu.close();
+      this.promptInstall();
+    });
+    elements.donateOpen.addEventListener('click', () => {
+      elements.menu.close();
+      elements.copyStatus.textContent = '';
+      elements.donateDialog.showModal();
+    });
+    elements.donateClose.addEventListener('click', () => elements.donateDialog.close());
+    elements.donateDialog.addEventListener('click', event => {
+      if (event.target === elements.donateDialog) elements.donateDialog.close();
+    });
+    elements.copyBtc.addEventListener('click', () => this.copyDonation(elements.donateBtc));
+    elements.copyLightning.addEventListener('click', () => this.copyDonation(elements.donateLightning));
     elements.installClose.addEventListener('click', () => elements.installDialog.close());
     elements.installDialog.addEventListener('click', event => { if (event.target === elements.installDialog) elements.installDialog.close(); });
     win.addEventListener('beforeinstallprompt', event => { event.preventDefault(); this.installPrompt = event; this.updateInstallButton(); });
