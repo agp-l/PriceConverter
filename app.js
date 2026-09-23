@@ -126,7 +126,8 @@ function showStatus() {
   if (!cache) { elements.status.textContent = state.error ? 'Kurzy nedostupné · zkuste obnovit' : 'Čekám na kurzy…'; return; }
   const minutes = Math.max(0,Math.floor((Date.now()-cache.updatedAt)/60000));
   const age = minutes < 1 ? 'právě teď' : minutes < 60 ? `před ${minutes} min` : minutes < 1440 ? `před ${Math.floor(minutes/60)} h` : `před ${Math.floor(minutes/1440)} d`;
-  const prefix = !online ? 'Offline · uložený kurz' : state.error ? 'Uložený kurz' : minutes >= 60 ? 'Starší kurz' : `${cache.sources.length} zdroje · aktualizováno`;
+  const sourceCount = `${cache.sources.length} ${cache.sources.length === 1 ? 'zdroj' : cache.sources.length < 5 ? 'zdroje' : 'zdrojů'}`;
+  const prefix = !online ? 'Offline · uložený kurz' : state.error ? 'Uložený kurz' : minutes >= 60 ? 'Starší kurz' : `${sourceCount} · aktualizováno`;
   elements.status.textContent = `${prefix} ${age}`;
   elements.status.title = `Zdroje: ${cache.sources.join(', ')} · ${new Date(cache.updatedAt).toLocaleString('cs-CZ')}`;
 }
