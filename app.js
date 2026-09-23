@@ -51,7 +51,7 @@ export class ConverterApp {
     this.doc = doc;
     this.win = win;
     this.elements = Object.fromEntries(Object.entries({
-      btc:'btc-input', unit:'btc-unit', btcButton:'unit-btc', satsButton:'unit-sats',
+      app:'app', btc:'btc-input', unit:'btc-unit', btcButton:'unit-btc', satsButton:'unit-sats',
       list:'currency-list', count:'currency-count', sort:'sort-currencies', sortHint:'sort-hint',
       status:'status-text', dot:'status-dot', refresh:'refresh', ratesStatus:'rates-status',
       language:'language-switch', add:'add-currency', dialog:'currency-dialog', close:'close-dialog',
@@ -294,6 +294,7 @@ export class ConverterApp {
 
   setMode(mode) {
     this.state.mode = ['convert', 'travel', 'trade', 'chart', 'settings'].includes(mode) ? mode : 'convert';
+    this.elements.app.classList.toggle('chart-mode', this.state.mode === 'chart');
     for (const [name, pane, button, title] of [
       ['convert', this.elements.paneConvert, this.elements.tabConvert, 'converterTab'],
       ['travel', this.elements.paneTravel, this.elements.tabTravel, 'travelHeading'],
