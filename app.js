@@ -4,6 +4,9 @@ import {resolveLanguage, t, ageText, sourceCount} from './i18n.js';
 import {parsePercent, tradeQuote, travelQuote, compareTravelOffer} from './quotes.js';
 
 const STORAGE_KEY = 'priceconverter:v1';
+const RATE_ATTEMPT_KEY = 'priceconverter:last-rate-attempt';
+const AUTO_REFRESH_MS = 5 * 60_000;
+const MANUAL_REFRESH_MS = 60_000;
 const DEFAULT_CURRENCIES = ['CZK', 'EUR', 'USD'];
 const CHART_RANGES = ['1M', '3M', '12M', '60M', 'MAX'];
 const CURRENCY_CODES = new Set(CURRENCIES.map(currency => currency.code));
@@ -11,6 +14,11 @@ const isRate = value => typeof value === 'number' && Number.isFinite(value) && v
 const searchable = value => value.toLocaleLowerCase('cs').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 const savedPercent = (value, fallback) => typeof value === 'number' && Number.isFinite(value) && value > -100 && value < 100 ? value : fallback;
 const savedCurrency = (value, fallback) => CURRENCY_CODES.has(value) ? value : fallback;
+
+export function shouldRefreshRates(cache, lastAttempt, now = Date.now(), manual = false) {
+  if (Number.isFinite(lastAttempt) && lastAttempt > 0 && now - lastAttempt < (manual ? MANUAL_REFRESH_MS : AUTO_REFRESH_MS)) return false;
+  return manual || !cache || !Number.isFinite(cache.updatedAt) || now - cache.updatedAt >= AUTO_REFRESH_MS;
+}
 
 // A quote is written from the owner's perspective, addressed to the other party.
 // Do not expose the owner's margin or market comparison in the shared offer.
@@ -110,12 +118,18 @@ export class ConverterApp {
       offerBtc:'offer-btc', offerMarket:'offer-market', offerMarketLabel:'offer-market-label', offerPrice:'offer-price',
       offerDifference:'offer-difference', offerDifferenceLabel:'offer-difference-label', tradeValidation:'trade-validation'
     }).map(([name, id]) => [name, doc.getElementById(id)]));
-    let json;
-    try { json = win.localStorage.getItem(STORAGE_KEY); } catch { /* Private browsing. */ }
+    let json, lastRateAttempt;
+    try {
+      json = win.localStorage.getItem(STORAGE_KEY);
+      lastRateAttempt = Number(win.localStorage.getItem(RATE_ATTEMPT_KEY));
+    } catch { /* Private browsing. */ }
+    this.lastRateAttempt = Number.isFinite(lastRateAttempt) && lastRateAttempt > 0 && lastRateAttempt <= Date.now()
+      ? lastRateAttempt : 0;
     const stored = restoreSettings(json);
     this.deviceLanguages = win.navigator.languages?.length ? win.navigator.languages : [win.navigator.language];
     this.state = {...stored, language:resolveLanguage(stored.languageMode, this.deviceLanguages),
-      anchor:'BTC', raw:'1', btc:stored.unit === 'SATS' ? 1e-8 : 1, busy:false, error:false};
+      anchor:'BTC', raw:'1', btc:stored.unit === 'SATS' ? 1e-8 : 1, busy:false,
+      error:!stored.cache && this.lastRateAttempt > 0};
     this.currencies = new Map();
     this.installPrompt = null;
     this.sorting = false;
@@ -548,6 +562,9 @@ export class ConverterApp {
 
   showStatus() {
     const {state, elements} = this;
+    const waitMs = Math.max(0, MANUAL_REFRESH_MS - (Date.now() - this.lastRateAttempt));
+    elements.refresh.disabled = state.busy || waitMs > 0;
+    elements.refresh.title = waitMs > 0 ? this.tr('refreshWait', {seconds:Math.ceil(waitMs / 1000)}) : this.tr('refresh');
     const cache = state.cache;
     const online = this.win.navigator.onLine;
     const ageMs = cache ? Date.now() - cache.updatedAt : 0;
@@ -595,7 +612,7 @@ export class ConverterApp {
     for (const element of this.doc.querySelectorAll('[data-i18n]')) element.textContent = this.tr(element.dataset.i18n);
     for (const element of this.doc.querySelectorAll('[data-i18n-aria-label]')) element.setAttribute('aria-label', this.tr(element.dataset.i18nAriaLabel));
     for (const element of this.doc.querySelectorAll('[data-i18n-placeholder]')) element.placeholder = this.tr(element.dataset.i18nPlaceholder);
-    elements.refresh.title = this.tr('refresh'); elements.refresh.setAttribute('aria-label', this.tr('refresh'));
+    elements.refresh.setAttribute('aria-label', this.tr('refresh'));
     if (elements.installDialog.open) this.updateInstallInstructions();
     this.syncUnit();
     this.renderCurrencySelects();
@@ -670,9 +687,20 @@ export class ConverterApp {
     }
   }
 
-  async refresh() {
+  async refresh(manual = false) {
     const {state, elements} = this;
-    if (state.busy) return;
+    if (state.busy || !this.win.navigator.onLine || (!manual && this.doc.visibilityState === 'hidden')) return;
+    try {
+      const stored = Number(this.win.localStorage.getItem(RATE_ATTEMPT_KEY));
+      if (Number.isFinite(stored) && stored > this.lastRateAttempt && stored <= Date.now()) this.lastRateAttempt = stored;
+    } catch { /* Keep the in-memory cooldown. */ }
+    if (!shouldRefreshRates(state.cache, this.lastRateAttempt, Date.now(), manual)) {
+      this.showStatus(); return;
+    }
+    this.lastRateAttempt = Date.now();
+    try { this.win.localStorage.setItem(RATE_ATTEMPT_KEY, String(this.lastRateAttempt)); }
+    catch { /* In-memory cooldown still applies. */ }
+    this.win.setTimeout(() => this.showStatus(), MANUAL_REFRESH_MS + 50);
     state.busy = true; state.error = false;
     elements.refresh.classList.add('loading'); elements.refresh.disabled = true; this.showStatus();
     try {
@@ -687,7 +715,7 @@ export class ConverterApp {
       this.renderOptions();
     } catch { state.error = true; }
     finally {
-      state.busy = false; elements.refresh.classList.remove('loading'); elements.refresh.disabled = false;
+      state.busy = false; elements.refresh.classList.remove('loading');
       this.showStatus(); this.renderTravel(); this.renderTrade();
     }
   }
@@ -710,7 +738,7 @@ export class ConverterApp {
     elements.menu.addEventListener('click', event => { if (event.target === elements.menu) elements.menu.close(); });
     elements.btcButton.addEventListener('click', () => this.setUnit('BTC'));
     elements.satsButton.addEventListener('click', () => this.setUnit('SATS'));
-    elements.refresh.addEventListener('click', () => this.refresh());
+    elements.refresh.addEventListener('click', () => this.refresh(true));
     elements.language.addEventListener('change', () => { this.state.languageMode = elements.language.value; this.applyLanguage(); this.save(); });
     elements.add.addEventListener('click', () => { this.renderOptions(); elements.dialog.showModal(); elements.search.focus(); });
     elements.sort.addEventListener('click', () => { this.sorting = !this.sorting; this.renderRows(); elements.sort.focus(); });
@@ -824,6 +852,9 @@ export class ConverterApp {
       }
       this.showStatus(); this.refresh(); this.loadMiniChart();
       this.loadLargeChart();
+    });
+    this.doc.addEventListener('visibilitychange', () => {
+      if (this.doc.visibilityState === 'visible') { this.showStatus(); this.refresh(); }
     });
     win.addEventListener('offline', () => { this.showStatus(); this.loadMiniChart(); this.loadLargeChart(); });
     win.setInterval(() => this.showStatus(), 60_000);

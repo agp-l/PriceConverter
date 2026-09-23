@@ -1,7 +1,7 @@
 import {detectLanguage, resolveLanguage, t} from '../i18n.js';
 import {getCurrencies} from '../currencies.js';
 import {averageRates, parseAmount, btcFrom, fromBtc, fetchRates} from '../rates.js';
-import {restoreSettings, ConverterApp, formatTradeOffer} from '../app.js';
+import {restoreSettings, ConverterApp, formatTradeOffer, shouldRefreshRates} from '../app.js';
 import {parsePercent, tradeQuote, travelQuote, compareTravelOffer} from '../quotes.js';
 
 const results = document.querySelector('#results');
@@ -75,6 +75,19 @@ await check('Výpadek zdroje neodstaví dostupný kurz', async () => {
   };
   const result = await fetchRates(fakeFetch);
   assert(result.sources.join(',') === 'BitPay' && result.rates.PYG === 510_000_000, 'Chybí platný zdroj');
+});
+
+await check('Kurzy se automaticky načítají nejdříve po 5 minutách', () => {
+  const now = Date.now();
+  const fresh = {updatedAt:now - 2 * 60_000};
+  const old = {updatedAt:now - 6 * 60_000};
+  assert(!shouldRefreshRates(fresh, now - 2 * 60_000, now), 'Čerstvá uložená cena stačí');
+  assert(!shouldRefreshRates(old, now - 30_000, now), 'Návrat připojení nevyvolá druhý dotaz');
+  assert(shouldRefreshRates(old, now - 5 * 60_000, now), 'Starý kurz se při návratu obnoví');
+  assert(!shouldRefreshRates(null, now - 2 * 60_000, now), 'Chyba nedělá rychlé opakování');
+  assert(shouldRefreshRates(null, 0, now), 'Bez cache proběhne první dotaz');
+  assert(!shouldRefreshRates(old, now - 30_000, now, true), 'Ruční obnovení má odstup');
+  assert(shouldRefreshRates(fresh, now - 60_000, now, true), 'Po minutě lze kurz vyžádat ručně');
 });
 
 await check('Jedno procento zvýhodní nákup i prodej BTC', () => {
@@ -210,10 +223,12 @@ await check('Kopírování darovacích údajů a ruční záloha', async () => {
 
 await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
   const key = 'priceconverter:v1';
+  const attemptKey = 'priceconverter:last-rate-attempt';
   const previous = localStorage.getItem(key);
+  const previousAttempt = localStorage.getItem(attemptKey);
   const iframe = document.createElement('iframe');
   try {
-    localStorage.removeItem(key);
+    localStorage.removeItem(key); localStorage.removeItem(attemptKey);
     iframe.src = '../index.html'; document.body.append(iframe);
     await new Promise((resolve, reject) => {
       iframe.addEventListener('load', resolve, {once:true});
@@ -323,7 +338,11 @@ await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
     doc.querySelector('#tab-settings').click();
     assert(!doc.querySelector('#settings-pane').hidden && doc.querySelector('#screen-title').textContent === 'Settings', 'Obrazovka nastavení');
     const visibility = doc.querySelector('#show-chart-preview');
+    assert(visibility.getAttribute('role') === 'switch' &&
+      visibility.parentElement.querySelector('.switch-track') &&
+      doc.querySelector('#chart-preview-state').textContent === 'On', 'Viditelný přepínač grafu');
     visibility.checked = false; visibility.dispatchEvent(new Event('change', {bubbles:true}));
+    assert(doc.querySelector('#chart-preview-state').textContent === 'Off', 'Popisek vypnutého přepínače');
     const range = doc.querySelector('#chart-range');
     range.value = '3M'; range.dispatchEvent(new Event('change', {bubbles:true}));
     assert(JSON.parse(localStorage.getItem(key)).showChartPreview === false &&
@@ -347,6 +366,8 @@ await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
     iframe.remove();
     if (previous === null) localStorage.removeItem(key);
     else localStorage.setItem(key, previous);
+    if (previousAttempt === null) localStorage.removeItem(attemptKey);
+    else localStorage.setItem(attemptKey, previousAttempt);
   }
 });
 
