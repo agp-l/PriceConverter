@@ -77,14 +77,15 @@ await check('Výpadek zdroje neodstaví dostupný kurz', async () => {
   assert(result.sources.join(',') === 'BitPay' && result.rates.PYG === 510_000_000, 'Chybí platný zdroj');
 });
 
-await check('Kurzy se automaticky načítají nejdříve po 5 minutách', () => {
+await check('Kurzy se automaticky načítají nejdříve po hodině', () => {
   const now = Date.now();
-  const fresh = {updatedAt:now - 2 * 60_000};
-  const old = {updatedAt:now - 6 * 60_000};
-  assert(!shouldRefreshRates(fresh, now - 2 * 60_000, now), 'Čerstvá uložená cena stačí');
+  const fresh = {updatedAt:now - 30 * 60_000};
+  const old = {updatedAt:now - 61 * 60_000};
+  assert(!shouldRefreshRates(fresh, now - 61 * 60_000, now), 'Půlhodinová cena stačí');
   assert(!shouldRefreshRates(old, now - 30_000, now), 'Návrat připojení nevyvolá druhý dotaz');
-  assert(shouldRefreshRates(old, now - 5 * 60_000, now), 'Starý kurz se při návratu obnoví');
-  assert(!shouldRefreshRates(null, now - 2 * 60_000, now), 'Chyba nedělá rychlé opakování');
+  assert(!shouldRefreshRates(old, now - 59 * 60_000, now), 'Po 59 minutách se automaticky neopakuje');
+  assert(shouldRefreshRates(old, now - 60 * 60_000, now), 'Po hodině se starý kurz obnoví');
+  assert(!shouldRefreshRates(null, now - 10 * 60_000, now), 'Chyba nedělá rychlé opakování');
   assert(shouldRefreshRates(null, 0, now), 'Bez cache proběhne první dotaz');
   assert(!shouldRefreshRates(old, now - 30_000, now, true), 'Ruční obnovení má odstup');
   assert(shouldRefreshRates(fresh, now - 60_000, now, true), 'Po minutě lze kurz vyžádat ručně');

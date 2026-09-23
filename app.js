@@ -5,7 +5,7 @@ import {parsePercent, tradeQuote, travelQuote, compareTravelOffer} from './quote
 
 const STORAGE_KEY = 'priceconverter:v1';
 const RATE_ATTEMPT_KEY = 'priceconverter:last-rate-attempt';
-const AUTO_REFRESH_MS = 5 * 60_000;
+const AUTO_REFRESH_MS = 60 * 60_000;
 const MANUAL_REFRESH_MS = 60_000;
 const DEFAULT_CURRENCIES = ['CZK', 'EUR', 'USD'];
 const CHART_RANGES = ['1M', '3M', '12M', '60M', 'MAX'];
