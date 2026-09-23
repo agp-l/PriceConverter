@@ -2,7 +2,7 @@
 
 A pocket-sized Bitcoin trade calculator and travel currency converter. [Open the app](https://convertor.dobrodruzi.cz/).
 
-VexlCalc is a standalone progressive web app built with HTML, CSS, and vanilla JavaScript. It runs in the browser with no account, Node.js, framework, build step, or backend. You can add it to your phone's home screen.
+VexlCalc is a standalone progressive web app built with HTML, CSS, and vanilla JavaScript. It runs in the browser with no account, Node.js, framework, build step, or backend. You can add it to your phone's home screen. Use the menu button to switch between **Converter**, **Currency to currency**, and **Personal trades**.
 
 > VexlCalc is an independent project and is not affiliated with Vexl. It calculates estimates; it does not publish offers, arrange trades, or move money.
 
@@ -12,14 +12,13 @@ VexlCalc is a standalone progressive web app built with HTML, CSS, and vanilla J
 
 - Enter an amount in BTC, sats, or any selected fiat currency to update the other amounts.
 - Switch the Bitcoin display between **BTC** and **SATS**.
-- Add or remove currencies from a catalog of more than 160 codes, including **PYG**.
-- Use the travel converter to estimate a fiat-to-fiat amount and swap its direction.
+- Add or remove currencies from a catalog of more than 160 codes, including **PYG**. Tap **Reorder**, use the up/down buttons, and tap **Done**; the order is saved on this device.
 
-The fiat-to-fiat estimate is derived from the available BTC prices: **target fiat per BTC ÷ source fiat per BTC**. It is not a bank or currency exchange quote. A currency can be listed without having a rate from the current providers; the app shows that a rate is missing instead of inventing one.
+The converter shows your selected currencies together and updates them when you edit any amount. The separate **Currency to currency** screen is for a quick pair conversion: choose two fiat currencies, enter an amount, and swap the direction with one tap. Its estimate is derived from the available BTC prices: **target fiat per BTC ÷ source fiat per BTC**. It is not a bank or currency exchange quote. A currency can be listed without having a rate from the current providers; the app shows that a rate is missing instead of inventing one.
 
 ### Calculate a personal Bitcoin trade
 
-The **Personal trade** tab uses *your* perspective throughout:
+The **Personal trades** screen uses *your* perspective throughout:
 
 | Action | You give | You receive | With a 2% rate advantage |
 | --- | --- | --- | --- |
@@ -38,7 +37,7 @@ The browser requests BTC-to-fiat rates from [CoinGecko](https://api.coingecko.co
 
 The app shows the age of its last downloaded rates and lets you refresh them. Its service worker caches the app files for offline opening after a successful visit; the last downloaded rates are kept in browser storage. Offline results can be stale. On a first visit without a connection or a saved rate, conversions that need a rate are unavailable.
 
-Settings and cached rates live in your browser's `localStorage` under `priceconverter:v1` (the existing key is retained for compatibility). Saved settings include currencies, display unit, language, mode, one trade percentage, and conversion choices. An existing pair of buy/sell percentages is migrated using the direction last selected. Entered trade amounts, individual trades, and a manually entered reference price are not saved. The app has no account or server-side trade history; fetching rates sends requests to the named third-party providers.
+Settings and cached rates live in your browser's `localStorage` under `priceconverter:v1` (the existing key is retained for compatibility). Saved settings include selected currencies **and their order**, display unit, language, current screen, one trade percentage, and conversion choices. An existing pair of buy/sell percentages is migrated using the direction last selected. Entered trade amounts, individual trades, and a manually entered reference price are not saved. The app has no account or server-side trade history; fetching rates sends requests to the named third-party providers.
 
 The interface supports **English and Czech**. **Auto** follows the device language; a manual choice is remembered.
 

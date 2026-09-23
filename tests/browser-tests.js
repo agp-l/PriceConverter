@@ -54,6 +54,8 @@ await check('Neplatné kurzy a poškozená uložená data', () => {
   assert(restoreSettings(JSON.stringify({buyPercent:-3, sellPercent:4})).marginPercent === 3, 'Převod staré nákupní ceny');
   assert(restoreSettings(JSON.stringify({buyPercent:-3, sellPercent:4, dealerSide:'sell'})).marginPercent === 4, 'Převod staré prodejní ceny');
   assert(restoreSettings(JSON.stringify({marginPercent:-2, buyPercent:-3})).marginPercent === -2, 'Nové nastavení má přednost');
+  const travelSettings = restoreSettings(JSON.stringify({mode:'travel', selected:['PYG','EUR','CZK']}));
+  assert(travelSettings.mode === 'travel' && travelSettings.selected.join(',') === 'PYG,EUR,CZK', 'Cestovní režim a pořadí měn');
 });
 
 await check('Výpadek zdroje neodstaví dostupný kurz', async () => {
