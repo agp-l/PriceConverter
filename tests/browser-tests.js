@@ -2,6 +2,7 @@ import {detectLanguage, resolveLanguage, t} from '../i18n.js';
 import {getCurrencies} from '../currencies.js';
 import {averageRates, parseAmount, btcFrom, fromBtc, fetchRates} from '../rates.js';
 import {restoreSettings} from '../app.js';
+import {parsePercent, tradeQuote, travelQuote} from '../quotes.js';
 
 const results = document.querySelector('#results');
 let passed = 0;
@@ -56,6 +57,29 @@ await check('Výpadek zdroje neodstaví dostupný kurz', async () => {
   };
   const result = await fetchRates(fakeFetch);
   assert(result.sources.join(',') === 'BitPay' && result.rates.PYG === 510_000_000, 'Chybí platný zdroj');
+});
+
+await check('Nákup BTC pod trhem a prodej BTC nad trhem', () => {
+  const buy = tradeQuote({marketRate:2_000_000, percent:-2, side:'buy', amount:0.005, amountKind:'bitcoin'});
+  const sell = tradeQuote({marketRate:2_000_000, percent:2, side:'sell', amount:0.005, amountKind:'bitcoin'});
+  assert(buy.fiat === 9_800 && buy.offeredRate === 1_960_000, 'Výkupní cena');
+  assert(sell.fiat === 10_200 && sell.offeredRate === 2_040_000, 'Prodejní cena');
+  assert(buy.difference === 200 && sell.difference === 200, 'Rozdíl proti trhu');
+  assert(parsePercent('−2,5', 'cs') === -2.5 && parsePercent('+2.5', 'en') === 2.5, 'Procenta');
+});
+
+await check('Pevná fiat částka a zaokrouhlení na celé satoshi', () => {
+  const buy = tradeQuote({marketRate:2_000_000, percent:-2, side:'buy', amount:10_000});
+  const sell = tradeQuote({marketRate:2_000_000, percent:2, side:'sell', amount:10_000});
+  assert(buy.sats === 510205 && sell.sats === 490196, 'Zaokrouhlení podle směru');
+  assert(tradeQuote({marketRate:2_000_000, percent:-100, side:'buy', amount:100}) === null, 'Neplatná cena');
+  assert(tradeQuote({marketRate:2_000_000, percent:0, side:'sell', amount:1.5, amountKind:'bitcoin', unit:'SATS'}) === null, 'Zlomek satoshi');
+});
+
+await check('Cestovní přepočet mezi fiat měnami', () => {
+  const quote = travelQuote(100, 'CZK', 'EUR', {CZK:2_000_000, EUR:80_000});
+  assert(quote.rate === 0.04 && quote.result === 4, 'Křížový kurz');
+  assert(travelQuote(100, 'CZK', 'PYG', {CZK:2_000_000}) === null, 'Chybějící kurz');
 });
 
 await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
