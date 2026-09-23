@@ -1,12 +1,15 @@
 import {parseAmount, btcFrom, fromBtc, fetchRates} from './rates.js';
 import {CURRENCIES, getCurrencies} from './currencies.js';
 import {resolveLanguage, t, ageText, sourceCount} from './i18n.js';
+import {parsePercent, tradeQuote, travelQuote} from './quotes.js';
 
 const STORAGE_KEY = 'priceconverter:v1';
 const DEFAULT_CURRENCIES = ['CZK', 'EUR', 'USD'];
 const CURRENCY_CODES = new Set(CURRENCIES.map(currency => currency.code));
 const isRate = value => typeof value === 'number' && Number.isFinite(value) && value > 0;
 const searchable = value => value.toLocaleLowerCase('cs').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const savedPercent = (value, fallback) => typeof value === 'number' && Number.isFinite(value) && value > -100 && value <= 1000 ? value : fallback;
+const savedCurrency = (value, fallback) => CURRENCY_CODES.has(value) ? value : fallback;
 
 // Keep one storage format across releases. Discard malformed fields individually.
 export function restoreSettings(json) {
@@ -27,7 +30,13 @@ export function restoreSettings(json) {
     if (Object.keys(rates).length && sources.length) cache = {rates, sources, updatedAt:storedCache.updatedAt};
   }
   return {selected, unit:saved.unit === 'SATS' ? 'SATS' : 'BTC', cache,
-    languageMode:['cs', 'en'].includes(saved.languageMode) ? saved.languageMode : 'auto'};
+    languageMode:['cs', 'en'].includes(saved.languageMode) ? saved.languageMode : 'auto',
+    mode:saved.mode === 'trade' ? 'trade' : 'convert',
+    tradeCurrency:savedCurrency(saved.tradeCurrency, 'CZK'),
+    buyPercent:savedPercent(saved.buyPercent, -2), sellPercent:savedPercent(saved.sellPercent, 2),
+    dealerSide:saved.dealerSide === 'sell' ? 'sell' : 'buy',
+    dealerKind:saved.dealerKind === 'bitcoin' ? 'bitcoin' : 'fiat',
+    travelFrom:savedCurrency(saved.travelFrom, 'CZK'), travelTo:savedCurrency(saved.travelTo, 'EUR')};
 }
 
 export class ConverterApp {
@@ -39,7 +48,17 @@ export class ConverterApp {
       list:'currency-list', count:'currency-count', status:'status-text', dot:'status-dot', refresh:'refresh',
       language:'language-switch', add:'add-currency', dialog:'currency-dialog', close:'close-dialog',
       search:'currency-search', options:'currency-options', install:'install-button',
-      installDialog:'install-dialog', installClose:'close-install', installInstructions:'install-instructions'
+      installDialog:'install-dialog', installClose:'close-install', installInstructions:'install-instructions',
+      tabConvert:'tab-convert', tabTrade:'tab-trade', paneConvert:'convert-pane', paneTrade:'trade-pane',
+      travelAmount:'travel-amount', travelFrom:'travel-from', travelTo:'travel-to', travelSwap:'travel-swap',
+      travelValue:'travel-value', travelRate:'travel-rate',
+      dealerBuy:'dealer-buy', dealerSell:'dealer-sell', tradeExplanation:'trade-explanation',
+      dealerCurrency:'dealer-currency', buyPercent:'buy-percent', sellPercent:'sell-percent',
+      buyMarginField:'buy-margin-field', sellMarginField:'sell-margin-field',
+      dealerKind:'dealer-amount-kind', dealerUnit:'dealer-unit', dealerAmount:'dealer-amount',
+      offerFiatLabel:'offer-fiat-label', offerBtcLabel:'offer-btc-label', offerFiat:'offer-fiat',
+      offerBtc:'offer-btc', offerMarket:'offer-market', offerPrice:'offer-price',
+      offerDifference:'offer-difference', tradeValidation:'trade-validation'
     }).map(([name, id]) => [name, doc.getElementById(id)]));
     let json;
     try { json = win.localStorage.getItem(STORAGE_KEY); } catch { /* Private browsing. */ }
@@ -50,13 +69,17 @@ export class ConverterApp {
     this.currencies = new Map();
     this.installPrompt = null;
     this.setFormatters();
+    this.tradeFiatRaw = '10000';
+    this.tradeBitcoinRaw = stored.unit === 'SATS' ? '1000000' : '0.01';
   }
 
   tr(key, parameters) { return t(this.state.language, key, parameters); }
 
   save() {
-    const {selected, unit, cache, languageMode} = this.state;
-    try { this.win.localStorage.setItem(STORAGE_KEY, JSON.stringify({selected, unit, cache, languageMode})); }
+    const {selected, unit, cache, languageMode, mode, tradeCurrency, buyPercent, sellPercent,
+      dealerSide, dealerKind, travelFrom, travelTo} = this.state;
+    try { this.win.localStorage.setItem(STORAGE_KEY, JSON.stringify({selected, unit, cache, languageMode,
+      mode, tradeCurrency, buyPercent, sellPercent, dealerSide, dealerKind, travelFrom, travelTo})); }
     catch { /* Conversion remains available without local storage. */ }
   }
 
@@ -174,6 +197,83 @@ export class ConverterApp {
     }
   }
 
+  renderCurrencySelects() {
+    for (const [element, current] of [
+      [this.elements.dealerCurrency, this.state.tradeCurrency],
+      [this.elements.travelFrom, this.state.travelFrom],
+      [this.elements.travelTo, this.state.travelTo]
+    ]) {
+      element.replaceChildren();
+      for (const currency of this.currencies.values()) {
+        const option = this.doc.createElement('option');
+        option.value = currency.code; option.textContent = `${currency.code} · ${currency.name}`;
+        element.append(option);
+      }
+      element.value = current;
+    }
+  }
+
+  setMode(mode) {
+    this.state.mode = mode === 'trade' ? 'trade' : 'convert';
+    const trade = this.state.mode === 'trade';
+    this.elements.paneConvert.hidden = trade;
+    this.elements.paneTrade.hidden = !trade;
+    this.elements.tabConvert.setAttribute('aria-selected', String(!trade));
+    this.elements.tabTrade.setAttribute('aria-selected', String(trade));
+    this.save();
+  }
+
+  renderTravel() {
+    const {state, elements} = this;
+    const amount = parseAmount(elements.travelAmount.value, state.language);
+    const quote = travelQuote(amount, state.travelFrom, state.travelTo, state.cache?.rates);
+    const locale = state.language === 'cs' ? 'cs-CZ' : 'en-US';
+    elements.travelValue.textContent = quote
+      ? `${new Intl.NumberFormat(locale, {maximumFractionDigits:8}).format(quote.result)} ${state.travelTo}` : '—';
+    elements.travelRate.textContent = quote
+      ? this.tr('travelRate', {from:state.travelFrom, to:state.travelTo,
+        rate:new Intl.NumberFormat(locale, {maximumSignificantDigits:8}).format(quote.rate)})
+      : this.tr(amount === null ? 'invalidAmount' : 'noRate');
+  }
+
+  renderTrade() {
+    const {state, elements} = this;
+    const buying = state.dealerSide === 'buy';
+    elements.dealerBuy.classList.toggle('selected', buying);
+    elements.dealerSell.classList.toggle('selected', !buying);
+    elements.dealerBuy.setAttribute('aria-pressed', String(buying));
+    elements.dealerSell.setAttribute('aria-pressed', String(!buying));
+    elements.buyMarginField.classList.toggle('active', buying);
+    elements.sellMarginField.classList.toggle('active', !buying);
+    elements.tradeExplanation.textContent = this.tr(buying ? 'buyExplanation' : 'sellExplanation', {currency:state.tradeCurrency});
+    elements.offerFiatLabel.textContent = this.tr(buying ? 'fiatPaid' : 'fiatReceived');
+    elements.offerBtcLabel.textContent = this.tr(buying ? 'btcReceived' : 'btcDelivered');
+    const amount = parseAmount(elements.dealerAmount.value, state.language);
+    const percent = parsePercent(buying ? elements.buyPercent.value : elements.sellPercent.value, state.language);
+    const marketRate = state.cache?.rates?.[state.tradeCurrency];
+    const quote = amount === null || percent === null ? null : tradeQuote({marketRate, percent,
+      side:state.dealerSide, amount, amountKind:state.dealerKind, unit:state.unit});
+    const fiat = number => `${this.format(number, state.tradeCurrency)} ${state.tradeCurrency}`;
+    elements.offerFiat.textContent = quote ? fiat(quote.fiat) : '—';
+    elements.offerBtc.textContent = quote ? state.unit === 'SATS'
+      ? `${this.format(quote.sats, 'BTC')} sats` : `${this.format(quote.btc, 'BTC')} BTC` : '—';
+    elements.offerMarket.textContent = isRate(marketRate) ? fiat(marketRate) : '—';
+    elements.offerPrice.textContent = quote ? fiat(quote.offeredRate) : '—';
+    elements.offerDifference.textContent = quote ? `${quote.difference > 0 ? '+' : ''}${fiat(quote.difference)}` : '—';
+    elements.tradeValidation.textContent = !this.hasRate(state.tradeCurrency) ? this.tr('tradeNoRate', {currency:state.tradeCurrency})
+      : amount === null ? this.tr('invalidAmount') : percent === null ? this.tr('invalidPercent')
+      : !quote ? this.tr('invalidTrade') : '';
+  }
+
+  changeDealerKind(kind) {
+    if (this.state.dealerKind === kind) return;
+    if (this.state.dealerKind === 'fiat') this.tradeFiatRaw = this.elements.dealerAmount.value;
+    else this.tradeBitcoinRaw = this.elements.dealerAmount.value;
+    this.state.dealerKind = kind;
+    this.elements.dealerAmount.value = kind === 'fiat' ? this.tradeFiatRaw : this.tradeBitcoinRaw;
+    this.save(); this.renderTrade();
+  }
+
   syncUnit() {
     const {state, elements} = this;
     elements.unit.textContent = state.unit;
@@ -185,13 +285,21 @@ export class ConverterApp {
 
   setUnit(unit) {
     if (unit === this.state.unit) return;
+    const oldBitcoinAmount = parseAmount(this.tradeBitcoinRaw, this.state.language);
+    const oldUnit = this.state.unit;
     this.state.unit = unit;
     this.syncUnit();
     if (this.state.anchor === 'BTC') {
       this.state.raw = this.format(fromBtc(this.state.btc, 'BTC', {}, unit), 'BTC');
       this.elements.btc.value = this.state.raw;
     }
-    this.save(); this.updateValues();
+    if (oldBitcoinAmount !== null) {
+      const converted = oldUnit === 'BTC' ? oldBitcoinAmount * 1e8 : oldBitcoinAmount / 1e8;
+      this.tradeBitcoinRaw = this.formatEntry(converted, this.tradeBitcoinRaw, 'BTC');
+      if (this.state.dealerKind === 'bitcoin') this.elements.dealerAmount.value = this.tradeBitcoinRaw;
+    }
+    this.elements.dealerUnit.value = unit;
+    this.save(); this.updateValues(); this.renderTrade();
   }
 
   showStatus() {
@@ -215,10 +323,22 @@ export class ConverterApp {
   applyLanguage() {
     const {state, elements} = this;
     const amount = parseAmount(state.raw, state.language);
+    const travelAmount = parseAmount(elements.travelAmount.value, state.language);
+    const tradeFiatAmount = parseAmount(this.tradeFiatRaw, state.language);
+    const tradeBitcoinAmount = parseAmount(this.tradeBitcoinRaw, state.language);
+    const buyPercent = parsePercent(elements.buyPercent.value, state.language);
+    const sellPercent = parsePercent(elements.sellPercent.value, state.language);
     state.language = resolveLanguage(state.languageMode, this.deviceLanguages);
     this.currencies = new Map(getCurrencies(state.language).map(currency => [currency.code, currency]));
     this.setFormatters();
     if (amount !== null) state.raw = this.formatEntry(amount, state.raw, state.anchor);
+    if (travelAmount !== null) elements.travelAmount.value = this.formatEntry(travelAmount, elements.travelAmount.value, state.travelFrom);
+    if (tradeFiatAmount !== null) this.tradeFiatRaw = this.formatEntry(tradeFiatAmount, this.tradeFiatRaw, state.tradeCurrency);
+    if (tradeBitcoinAmount !== null) this.tradeBitcoinRaw = this.formatEntry(tradeBitcoinAmount, this.tradeBitcoinRaw, 'BTC');
+    elements.dealerAmount.value = state.dealerKind === 'fiat' ? this.tradeFiatRaw : this.tradeBitcoinRaw;
+    const percentFormatter = new Intl.NumberFormat(state.language === 'cs' ? 'cs-CZ' : 'en-US', {maximumFractionDigits:4, useGrouping:false});
+    if (buyPercent !== null) elements.buyPercent.value = percentFormatter.format(buyPercent);
+    if (sellPercent !== null) elements.sellPercent.value = percentFormatter.format(sellPercent);
     this.doc.documentElement.lang = state.language;
     this.doc.title = this.tr('pageTitle');
     this.doc.querySelector('meta[name="description"]').content = this.tr('pageDescription');
@@ -229,8 +349,11 @@ export class ConverterApp {
     elements.refresh.title = this.tr('refresh'); elements.refresh.setAttribute('aria-label', this.tr('refresh'));
     if (elements.installDialog.open) this.updateInstallInstructions();
     this.syncUnit();
+    this.renderCurrencySelects();
+    elements.dealerUnit.value = state.unit;
+    elements.dealerKind.value = state.dealerKind;
     if (state.anchor === 'BTC') elements.btc.value = state.raw;
-    this.renderRows(); this.renderOptions(); this.showStatus();
+    this.renderRows(); this.renderOptions(); this.renderTravel(); this.renderTrade(); this.setMode(state.mode); this.showStatus();
   }
 
   updateInstallInstructions() {
@@ -272,13 +395,18 @@ export class ConverterApp {
       this.renderOptions();
     } catch { state.error = true; }
     finally {
-      state.busy = false; elements.refresh.classList.remove('loading'); elements.refresh.disabled = false; this.showStatus();
+      state.busy = false; elements.refresh.classList.remove('loading'); elements.refresh.disabled = false;
+      this.showStatus(); this.renderTravel(); this.renderTrade();
     }
   }
 
   start() {
     const {elements, win} = this;
     elements.btc.value = this.state.raw;
+    const percentFormatter = new Intl.NumberFormat(this.state.language === 'cs' ? 'cs-CZ' : 'en-US', {maximumFractionDigits:4, useGrouping:false});
+    elements.buyPercent.value = percentFormatter.format(this.state.buyPercent);
+    elements.sellPercent.value = percentFormatter.format(this.state.sellPercent);
+    elements.dealerAmount.value = this.state.dealerKind === 'fiat' ? this.tradeFiatRaw : this.tradeBitcoinRaw;
     elements.btc.addEventListener('input', () => this.recalculate('BTC', elements.btc.value));
     elements.btc.addEventListener('focus', () => elements.btc.select());
     elements.btcButton.addEventListener('click', () => this.setUnit('BTC'));
@@ -289,6 +417,42 @@ export class ConverterApp {
     elements.close.addEventListener('click', () => elements.dialog.close());
     elements.dialog.addEventListener('click', event => { if (event.target === elements.dialog) elements.dialog.close(); });
     elements.search.addEventListener('input', () => this.renderOptions());
+    elements.tabConvert.addEventListener('click', () => this.setMode('convert'));
+    elements.tabTrade.addEventListener('click', () => this.setMode('trade'));
+    for (const tab of [elements.tabConvert, elements.tabTrade]) tab.addEventListener('keydown', event => {
+      if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+      event.preventDefault();
+      const next = tab === elements.tabConvert ? elements.tabTrade : elements.tabConvert;
+      this.setMode(next === elements.tabTrade ? 'trade' : 'convert'); next.focus();
+    });
+    elements.travelAmount.addEventListener('input', () => this.renderTravel());
+    elements.travelFrom.addEventListener('change', () => { this.state.travelFrom = elements.travelFrom.value; this.save(); this.renderTravel(); });
+    elements.travelTo.addEventListener('change', () => { this.state.travelTo = elements.travelTo.value; this.save(); this.renderTravel(); });
+    elements.travelSwap.addEventListener('click', () => {
+      [this.state.travelFrom, this.state.travelTo] = [this.state.travelTo, this.state.travelFrom];
+      elements.travelFrom.value = this.state.travelFrom; elements.travelTo.value = this.state.travelTo;
+      this.save(); this.renderTravel();
+    });
+    for (const [button, side] of [[elements.dealerBuy, 'buy'], [elements.dealerSell, 'sell']]) {
+      button.addEventListener('click', () => { this.state.dealerSide = side; this.save(); this.renderTrade(); });
+    }
+    elements.dealerCurrency.addEventListener('change', () => {
+      this.state.tradeCurrency = elements.dealerCurrency.value; this.save(); this.renderTrade();
+    });
+    for (const [input, key] of [[elements.buyPercent, 'buyPercent'], [elements.sellPercent, 'sellPercent']]) {
+      input.addEventListener('input', () => {
+        const percent = parsePercent(input.value, this.state.language);
+        if (percent !== null) { this.state[key] = percent; this.save(); }
+        this.renderTrade();
+      });
+    }
+    elements.dealerAmount.addEventListener('input', () => {
+      if (this.state.dealerKind === 'fiat') this.tradeFiatRaw = elements.dealerAmount.value;
+      else this.tradeBitcoinRaw = elements.dealerAmount.value;
+      this.renderTrade();
+    });
+    elements.dealerKind.addEventListener('change', () => this.changeDealerKind(elements.dealerKind.value));
+    elements.dealerUnit.addEventListener('change', () => this.setUnit(elements.dealerUnit.value));
     elements.install.addEventListener('click', () => this.promptInstall());
     elements.installClose.addEventListener('click', () => elements.installDialog.close());
     elements.installDialog.addEventListener('click', event => { if (event.target === elements.installDialog) elements.installDialog.close(); });

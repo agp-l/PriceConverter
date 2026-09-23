@@ -6,20 +6,20 @@
   <meta name="theme-color" content="#173d31">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="PriceConverter">
-  <meta name="description" content="Jednoduchý převodník bitcoinu, satoshi a světových měn. Funguje i offline s posledním uloženým kurzem.">
+  <meta name="apple-mobile-web-app-title" content="VexlCalc">
+  <meta name="description" content="Nezávislá kalkulačka pro osobní směnu BTC a cestovní převod měn.">
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./icon-192.png">
   <link rel="stylesheet" href="./style.css">
-  <title>PriceConverter · Bitcoin v kapse</title>
+  <title>VexlCalc · BTC nabídky a měny</title>
 </head>
 <body>
   <div class="app-shell">
     <main class="app" id="app">
       <header class="app-header">
         <div class="brand-mark" aria-hidden="true">₿</div>
-        <div class="brand-copy"><span class="eyebrow" data-i18n="tagline">JEDNODUŠE PŘEPOČÍTAT</span><h1>PriceConverter<span class="title-dot">.</span></h1></div>
+        <div class="brand-copy"><span class="eyebrow" data-i18n="tagline">BTC & MĚNY PO RUCE</span><h1>VexlCalc<span class="title-dot">.</span></h1></div>
         <label class="sr-only" for="language-switch" data-i18n="languageLabel">Jazyk aplikace</label>
         <select id="language-switch" class="language-select" aria-label="Jazyk aplikace" data-i18n-aria-label="languageLabel">
           <option value="auto" data-i18n="automatic">Auto</option>
@@ -34,6 +34,12 @@
         </button>
       </div>
 
+      <div class="mode-tabs" role="tablist" aria-label="Režim kalkulačky" data-i18n-aria-label="modeLabel">
+        <button type="button" role="tab" id="tab-convert" aria-selected="true" aria-controls="convert-pane" data-i18n="converterTab">Převodník</button>
+        <button type="button" role="tab" id="tab-trade" aria-selected="false" aria-controls="trade-pane" data-i18n="tradeTab">Osobní směna</button>
+      </div>
+
+      <div id="convert-pane" role="tabpanel" aria-labelledby="tab-convert">
       <section class="bitcoin-card" aria-labelledby="bitcoin-label">
         <div class="card-top"><span class="card-kicker" id="bitcoin-label">BITCOIN</span><span class="bitcoin-emblem" aria-hidden="true">₿</span></div>
         <div class="bitcoin-input-wrap"><input id="btc-input" class="bitcoin-input" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="1" aria-label="Částka v bitcoinu nebo satoshi" data-i18n-aria-label="bitcoinInput"><span id="btc-unit" class="input-unit">BTC</span></div>
@@ -46,12 +52,39 @@
         <button type="button" id="add-currency" class="add-button"><span class="plus" aria-hidden="true">+</span> <span data-i18n="addCurrency">Přidat měnu</span> <span class="add-arrow" aria-hidden="true">↗</span></button>
       </section>
 
+      <section class="travel-card" aria-labelledby="travel-heading">
+        <div class="section-heading"><div><span class="eyebrow" data-i18n="travelEyebrow">NA CESTÁCH</span><h2 id="travel-heading" data-i18n="travelHeading">Měna za měnu</h2></div><span class="travel-emblem" aria-hidden="true">↔</span></div>
+        <label class="field-label" for="travel-amount" data-i18n="travelAmount">Kolik převést</label>
+        <input id="travel-amount" class="field-input" type="text" inputmode="decimal" autocomplete="off" value="100">
+        <div class="travel-pair"><label class="field-label" for="travel-from"><span data-i18n="fromCurrency">Z měny</span><select id="travel-from" class="field-select"></select></label><button type="button" id="travel-swap" class="swap-button" aria-label="Prohodit měny" data-i18n-aria-label="swapCurrencies">⇄</button><label class="field-label" for="travel-to"><span data-i18n="toCurrency">Do měny</span><select id="travel-to" class="field-select"></select></label></div>
+        <div class="travel-result" role="status" aria-live="polite"><span class="eyebrow" data-i18n="travelResult">ORIENTAČNÍ VÝSLEDEK</span><strong id="travel-value">—</strong><small id="travel-rate"></small></div>
+        <p class="helper-text" data-i18n="travelNotice">Orientační křížový kurz je odvozen z cen BTC. Kurz banky či směnárny se může lišit.</p>
+      </section>
+      </div>
+
+      <div id="trade-pane" role="tabpanel" aria-labelledby="tab-trade" hidden>
+        <section class="trade-intro"><span class="eyebrow" data-i18n="tradeEyebrow">NABÍDKA NAŽIVO</span><h2 data-i18n="tradeHeading">Kolik si domluvíte?</h2><p data-i18n="tradeIntro">Počítejte z pohledu toho, kdo BTC vykupuje nebo prodává. Obě procenta si nastavíte nezávisle.</p></section>
+        <div class="trade-side" role="group" aria-label="Směr obchodu" data-i18n-aria-label="tradeSideLabel"><button type="button" id="dealer-buy" class="selected" aria-pressed="true" data-i18n="dealerBuy">Nakupuji BTC</button><button type="button" id="dealer-sell" aria-pressed="false" data-i18n="dealerSell">Prodávám BTC</button></div>
+        <p id="trade-explanation" class="trade-explanation"></p>
+        <div class="trade-settings">
+          <label class="field-label" for="dealer-currency"><span data-i18n="tradeCurrency">Měna obchodu</span><select id="dealer-currency" class="field-select"></select></label>
+          <div class="margin-pair"><label class="margin-field" id="buy-margin-field" for="buy-percent"><span data-i18n="buyMargin">Můj nákup BTC</span><span class="percent-wrap"><input id="buy-percent" type="text" inputmode="decimal" autocomplete="off" value="-2"><b>%</b></span></label><label class="margin-field" id="sell-margin-field" for="sell-percent"><span data-i18n="sellMargin">Můj prodej BTC</span><span class="percent-wrap"><input id="sell-percent" type="text" inputmode="decimal" autocomplete="off" value="2"><b>%</b></span></label></div>
+          <p class="helper-text" data-i18n="marginHint">Záporné procento = pod tržní cenou. Kladné = nad tržní cenou.</p>
+          <div class="amount-tools"><label class="field-label" for="dealer-amount-kind"><span data-i18n="iEnter">Zadávám</span><select id="dealer-amount-kind" class="field-select"><option value="fiat" data-i18n="fiatAmount">Částku v měně</option><option value="bitcoin" data-i18n="bitcoinAmount">Množství BTC</option></select></label><label class="field-label" for="dealer-unit"><span data-i18n="bitcoinUnit">Jednotka bitcoinu</span><select id="dealer-unit" class="field-select"><option value="BTC">BTC</option><option value="SATS">SATS</option></select></label></div>
+          <label class="field-label" for="dealer-amount" data-i18n="tradeAmount">Částka pro nabídku</label><input id="dealer-amount" class="field-input trade-amount" type="text" inputmode="decimal" autocomplete="off" value="10000">
+        </div>
+        <section class="offer-card" aria-labelledby="offer-heading"><span class="eyebrow" data-i18n="offerEyebrow">VAŠE NABÍDKA</span><h2 id="offer-heading" data-i18n="offerHeading">Výsledek směny</h2><div class="offer-primary"><span id="offer-fiat-label"></span><strong id="offer-fiat">—</strong></div><div class="offer-primary"><span id="offer-btc-label"></span><strong id="offer-btc">—</strong></div><div class="offer-detail"><span data-i18n="marketPrice">Tržní cena 1 BTC</span><span id="offer-market">—</span></div><div class="offer-detail"><span data-i18n="yourPrice">Vaše cena 1 BTC</span><span id="offer-price">—</span></div><div class="offer-detail"><span data-i18n="marketDifference">Rozdíl proti trhu</span><span id="offer-difference">—</span></div></section>
+        <p id="trade-validation" class="trade-validation" role="status" aria-live="polite"></p>
+        <p class="helper-text trade-note" data-i18n="tradeNotice">Výpočet je orientační. BTC se zaokrouhluje na celé satoshi; síťové a další poplatky nejsou zahrnuty.</p>
+        <p class="independent-note" data-i18n="independentNotice">Nezávislá kalkulačka, není propojena s aplikací Vexl.</p>
+      </div>
+
       <footer class="app-footer"><button type="button" id="install-button" class="install-button"><span class="install-icon" aria-hidden="true">↧</span><span data-i18n="installButton">Nainstalovat aplikaci</span><span aria-hidden="true">↗</span></button><div class="footer-rule"></div><span data-i18n="indicative">Kurzy jsou orientační</span><span aria-hidden="true">✳</span><span>1 BTC = 100 000 000 sats</span></footer>
     </main>
   </div>
 
   <dialog id="currency-dialog" class="currency-dialog" aria-labelledby="dialog-title"><div class="dialog-header"><div><span class="eyebrow" data-i18n="settings">NASTAVENÍ</span><h2 id="dialog-title" data-i18n="addCurrency">Přidat měnu</h2></div><button type="button" id="close-dialog" class="icon-button" aria-label="Zavřít" data-i18n-aria-label="close">×</button></div><label class="search-label" for="currency-search" data-i18n="searchLabel">Hledat podle názvu nebo kódu</label><input id="currency-search" class="search-input" type="search" autocomplete="off" placeholder="Třeba PLN nebo zlotý" data-i18n-placeholder="searchPlaceholder"><div id="currency-options" class="currency-options"></div></dialog>
-  <dialog id="install-dialog" class="currency-dialog install-dialog" aria-labelledby="install-title"><div class="dialog-header"><div><span class="eyebrow" data-i18n="installEyebrow">APLIKACE V MOBILU</span><h2 id="install-title" data-i18n="installTitle">Přidat na plochu</h2></div><button type="button" id="close-install" class="icon-button" aria-label="Zavřít" data-i18n-aria-label="close">×</button></div><p data-i18n="installIntro">Otevřete si převodník jedním klepnutím přímo z plochy.</p><p id="install-instructions"></p></dialog>
+  <dialog id="install-dialog" class="currency-dialog install-dialog" aria-labelledby="install-title"><div class="dialog-header"><div><span class="eyebrow" data-i18n="installEyebrow">APLIKACE V MOBILU</span><h2 id="install-title" data-i18n="installTitle">Přidat na plochu</h2></div><button type="button" id="close-install" class="icon-button" aria-label="Zavřít" data-i18n-aria-label="close">×</button></div><p data-i18n="installIntro">Otevřete si kalkulačku jedním klepnutím přímo z plochy.</p><p id="install-instructions"></p></dialog>
   <script type="module" src="./app.js"></script>
 </body>
 </html>

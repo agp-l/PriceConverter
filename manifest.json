@@ -1,7 +1,7 @@
 {
-  "name": "PriceConverter · Bitcoin v kapse",
-  "short_name": "PriceConverter",
-  "description": "Bitcoin, satoshi a měny · Bitcoin, sats and currencies.",
+  "name": "VexlCalc · Bitcoin a měny",
+  "short_name": "VexlCalc",
+  "description": "Nezávislá kalkulačka pro osobní směnu BTC a cestovní převod měn.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

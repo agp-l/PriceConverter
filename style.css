@@ -132,7 +132,7 @@ body {
   background:#e6f1e4
 }
 
-.icon-button:focus-visible,button:focus-visible,input:focus-visible {
+.icon-button:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible {
   outline:3px solid #9ed27a;
   outline-offset:2px
 }
@@ -185,6 +185,39 @@ body {
 .status-dot.stale {
   background:#cc9c4c;
   box-shadow:0 0 0 3px #f7ecda
+}
+
+[hidden] { display:none!important }
+
+.mode-tabs {
+  display:flex;
+  gap:4px;
+  padding:4px;
+  margin:0 0 20px;
+  border:1px solid #dfe9dc;
+  border-radius:14px;
+  background:#edf2e9
+}
+
+.mode-tabs button {
+  flex:1;
+  min-width:0;
+  padding:11px 5px;
+  border:0;
+  border-radius:10px;
+  background:transparent;
+  color:#61786a;
+  font-family:inherit;
+  font-size:12px;
+  font-weight:700;
+  line-height:1.2;
+  cursor:pointer
+}
+
+.mode-tabs button[aria-selected="true"] {
+  background:#fff;
+  color:#173d31;
+  box-shadow:0 2px 9px #173d3112
 }
 
 .bitcoin-card {
@@ -605,6 +638,151 @@ body {
   color:#718374;
   font-size:13px
 }
+
+.travel-card {
+  margin-top:29px;
+  padding:21px;
+  border:1px solid #dde7d8;
+  border-radius:20px;
+  background:#fff
+}
+
+.travel-card .section-heading { margin-bottom:19px }
+.travel-card .section-heading h2 { font-size:22px }
+.travel-emblem { font-size:23px;color:#508a52 }
+
+.field-label {
+  display:block;
+  min-width:0;
+  color:#4e6b57;
+  font-size:11px;
+  font-weight:750
+}
+
+.field-label>span { display:block;margin-bottom:7px }
+.field-input,.field-select,.percent-wrap input {
+  width:100%;
+  min-width:0;
+  border:1px solid #d8e5d4;
+  border-radius:11px;
+  background:#fff;
+  color:#173d31;
+  font-family:inherit;
+  font-size:15px
+}
+
+.field-input { padding:12px 13px;font-weight:700;font-variant-numeric:tabular-nums }
+.field-select { padding:11px 7px;white-space:nowrap;text-overflow:ellipsis }
+
+.travel-pair {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 38px minmax(0,1fr);
+  align-items:end;
+  gap:6px;
+  margin-top:15px
+}
+
+.swap-button {
+  height:43px;
+  border:1px solid #d8e5d4;
+  border-radius:11px;
+  background:#eef5ea;
+  color:#285d38;
+  font-size:20px;
+  cursor:pointer
+}
+
+.travel-result {
+  display:grid;
+  gap:4px;
+  padding:16px;
+  margin-top:19px;
+  border-radius:14px;
+  background:#edf5e9
+}
+
+.travel-result strong { font-size:25px;letter-spacing:-.04em;overflow-wrap:anywhere }
+.travel-result small { color:#66816e;font-size:11px }
+.helper-text { margin:12px 0 0;color:#718777;font-size:11px;line-height:1.5 }
+
+.trade-intro { padding:5px 2px 0 }
+.trade-intro h2 { margin:6px 0 7px;font-size:25px;letter-spacing:-.05em }
+.trade-intro p { margin:0 0 17px;color:#60796a;font-size:12px;line-height:1.55 }
+
+.trade-side {
+  display:flex;
+  gap:6px;
+  padding:4px;
+  border-radius:14px;
+  background:#e8f0e3
+}
+
+.trade-side button {
+  flex:1;
+  min-width:0;
+  padding:12px 5px;
+  border:0;
+  border-radius:10px;
+  background:transparent;
+  color:#496c50;
+  font-family:inherit;
+  font-size:12px;
+  font-weight:750;
+  cursor:pointer
+}
+
+.trade-side button.selected { background:#173d31;color:#e9f6dd }
+.trade-explanation { min-height:34px;margin:12px 2px 18px;color:#526e5a;font-size:12px;line-height:1.4 }
+
+.trade-settings {
+  display:grid;
+  gap:15px;
+  padding:20px;
+  border:1px solid #e0e9dc;
+  border-radius:18px;
+  background:#fff
+}
+
+.margin-pair,.amount-tools { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px }
+.margin-field {
+  display:grid;
+  gap:8px;
+  min-width:0;
+  padding:11px;
+  border:1px solid #e2e9dd;
+  border-radius:12px;
+  color:#60796a;
+  font-size:11px;
+  font-weight:750
+}
+
+.margin-field.active { border-color:#a7c99a;background:#f1f7ed;color:#285d38 }
+.percent-wrap { display:flex;align-items:center;gap:3px }
+.percent-wrap input { min-width:0;padding:9px 8px;font-weight:700;font-variant-numeric:tabular-nums }
+.percent-wrap b { font-size:13px }
+.trade-settings>.helper-text { margin:-7px 0 0 }
+.trade-amount { font-size:22px }
+
+.offer-card {
+  padding:23px;
+  margin-top:13px;
+  border-radius:20px;
+  background:#173d31;
+  color:#f3f7ed
+}
+
+.offer-card .eyebrow { color:#b9d6b2 }
+.offer-card h2 { margin:5px 0 22px;font-size:23px;letter-spacing:-.04em }
+.offer-primary { display:grid;gap:2px;margin:0 0 17px }
+.offer-primary span { color:#bad4c2;font-size:11px }
+.offer-primary strong { font-size:clamp(23px,7vw,30px);letter-spacing:-.04em;overflow-wrap:anywhere }
+.offer-detail { display:flex;justify-content:space-between;gap:8px;margin-top:12px;font-size:11px }
+.offer-primary + .offer-detail { padding-top:15px;border-top:1px solid #ffffff33 }
+.offer-detail span:first-child { color:#bad4c2 }
+.offer-detail span:last-child { text-align:right;font-weight:750 }
+.trade-validation { min-height:17px;margin:10px 2px 0;color:#a44d36;font-size:11px;line-height:1.4 }
+.trade-note { margin:4px 2px 0 }
+.independent-note { margin:12px 2px 0;color:#899e90;font-size:10px;line-height:1.4 }
 
 @media(max-width:380px) {
   .app {

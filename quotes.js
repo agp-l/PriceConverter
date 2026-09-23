@@ -32,7 +32,9 @@ export function tradeQuote({marketRate, percent, side, amount, amountKind = 'fia
   } else {
     const unroundedSats = unit === 'SATS' ? amount : amount * SATS_PER_BTC;
     const wholeSats = Math.round(unroundedSats);
-    if (!Number.isSafeInteger(wholeSats) || wholeSats < 0 || Math.abs(unroundedSats - wholeSats) > 1e-6) return null;
+    if (!Number.isSafeInteger(wholeSats) || wholeSats < 0 ||
+        (unit === 'SATS' && !Number.isSafeInteger(amount)) ||
+        (unit === 'BTC' && Math.abs(unroundedSats - wholeSats) > 1e-6)) return null;
     sats = wholeSats;
     fiat = sats / SATS_PER_BTC * offeredRate;
   }
