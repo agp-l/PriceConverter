@@ -5,7 +5,7 @@ const messages = {
   cs: {
     pageTitle:'PriceConverter · Bitcoin v kapse',
     pageDescription:'Jednoduchý převodník bitcoinu, satoshi a světových měn. Funguje i offline s posledním uloženým kurzem.',
-    tagline:'JEDNODUŠE PŘEPOČÍTAT', languageLabel:'Jazyk aplikace', automatic:'Automaticky',
+    tagline:'JEDNODUŠE PŘEPOČÍTAT', languageLabel:'Jazyk aplikace', automatic:'Auto',
     refresh:'Aktualizovat kurzy', loading:'Načítám kurzy…', bitcoinInput:'Částka v bitcoinu nebo satoshi',
     bitcoinCaption:'Digitální peníze, bez hranic.', satsCaption:'Malé jednotky. Velké možnosti.',
     bitcoinUnit:'Jednotka bitcoinu', overview:'RYCHLÝ PŘEHLED', myCurrencies:'Moje měny',
@@ -23,7 +23,7 @@ const messages = {
   en: {
     pageTitle:'PriceConverter · Bitcoin in your pocket',
     pageDescription:'A simple Bitcoin, sats and currency converter. Works offline with the last saved rates.',
-    tagline:'CONVERT IN AN INSTANT', languageLabel:'App language', automatic:'Automatic',
+    tagline:'CONVERT IN AN INSTANT', languageLabel:'App language', automatic:'Auto',
     refresh:'Refresh rates', loading:'Loading rates…', bitcoinInput:'Amount in bitcoin or satoshis',
     bitcoinCaption:'Digital money, without borders.', satsCaption:'Small units. Big possibilities.',
     bitcoinUnit:'Bitcoin unit', overview:'AT A GLANCE', myCurrencies:'My currencies',

@@ -24,6 +24,13 @@ test('Czech decimal input and invalid numbers', () => {
   assert.equal(parseAmount('Infinity'),null);
 });
 
+test('English grouping and decimals remain editable after a language switch', () => {
+  assert.equal(parseAmount('1,234.5','en'),1234.5);
+  assert.equal(parseAmount('1,234','en'),1234);
+  assert.equal(parseAmount('1.234,5','cs'),1234.5);
+  assert.equal(parseAmount('1,234.5','cs'),null);
+});
+
 test('Rates average the BTC cost of one fiat unit and ignore unsupported data', () => {
   const result = averageRates([{CZK:100,EUR:50,BTC:1},{CZK:200,EUR:-1,USD:Infinity}]);
   assert.ok(Math.abs(result.CZK - (1 / ((1/100 + 1/200) / 2))) < 1e-10);

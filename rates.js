@@ -6,8 +6,12 @@ export {CURRENCIES} from './currencies.js';
 const allowed = new Set(CURRENCIES.map(currency => currency.code));
 const validRate = value => typeof value === 'number' && Number.isFinite(value) && value > 0;
 
-export function parseAmount(input) {
-  const cleaned = String(input).trim().replace(/[\s\u00a0\u202f]/g, '').replace(',', '.');
+export function parseAmount(input, language = 'cs') {
+  let cleaned = String(input).trim().replace(/[\s\u00a0\u202f]/g, '');
+  if (language === 'en' && /^(\d{1,3},)+\d{3}(?:\.\d*)?$/.test(cleaned)) cleaned = cleaned.replace(/,/g, '');
+  else if (language === 'cs' && /^(\d{1,3}\.)+\d{3},\d*$/.test(cleaned)) cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+  else if (cleaned.includes(',') && cleaned.includes('.')) return null;
+  else cleaned = cleaned.replace(',', '.');
   if (!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(cleaned)) return null;
   const result = Number(cleaned);
   return Number.isFinite(result) && result >= 0 ? result : null;

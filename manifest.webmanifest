@@ -1,8 +1,7 @@
 {
   "name": "PriceConverter · Bitcoin v kapse",
   "short_name": "PriceConverter",
-  "description": "Převod bitcoinu, satoshi a fiat měn.",
-  "lang": "cs",
+  "description": "Bitcoin, satoshi a měny · Bitcoin, sats and currencies.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

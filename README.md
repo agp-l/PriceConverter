@@ -6,6 +6,8 @@ Samostatná mobilně pojatá webová aplikace pro okamžitý převod mezi BTC, s
 
 Otevřete `index.html` přes HTTPS nebo na lokálním serveru. Zadejte částku do libovolného pole: ostatní řádky se hned přepočítají. Přepínač BTC / SATS převádí bitcoinovou částku, měny můžete přidávat a odebírat. Katalog obsahuje přes 160 měnových kódů včetně PYG; chybějící kurz se v seznamu jasně označí a jeho pole nelze upravovat. Rozložení a poslední úspěšně načtené kurzy se ukládají v prohlížeči.
 
+Rozhraní je česky a anglicky. Výchozí volba **Auto** vybere první podporovaný jazyk zařízení; pokud žádný neodpovídá, použije angličtinu. Přepínač v záhlaví umožní volit **Auto**, **Čeština** a **English**, ruční volba se pamatuje. Čísla i názvy měn odpovídají zvolenému jazyku. Název aplikace zůstává **PriceConverter** (anglicky „converter“ znamená převodník).
+
 Pro lokální spuštění například:
 
 ```sh
@@ -29,3 +31,5 @@ node --test tests/*.test.mjs
 ```
 
 Provozní soubory nepotřebují Node.js. Aplikace i service worker používají relativní cesty, takže fungují také v podadresáři GitHub Pages.
+
+Nový jazyk přidejte do slovníku v `i18n.js` a do `SUPPORTED_LANGUAGES`. Názvy měn poskytuje pro zvolený jazyk `Intl.DisplayNames` v `currencies.js` (při nepodporovaném jazyku zůstává kód měny). Přepínač v `index.html` doplňte o další volbu. Překlady, formát částek a názvy měn jsou oddělené od načítání kurzů.

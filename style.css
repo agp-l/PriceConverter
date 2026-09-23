@@ -33,7 +33,7 @@ body {
 .app-header {
   display:flex;
   align-items:center;
-  gap:11px
+  gap:9px
 }
 
 .brand-mark {
@@ -64,19 +64,49 @@ body {
 
 .brand-copy .eyebrow {
   display:block;
-  margin-bottom:2px
+  margin-bottom:2px;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis
 }
 
 .brand-copy h1 {
-  font-size:19px;
+  font-size:clamp(15px,5vw,19px);
   letter-spacing:-.055em;
   margin:0;
   line-height:1.15;
-  font-weight:800
+  font-weight:800;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis
 }
 
 .title-dot {
   color:#78a646
+}
+
+.sr-only {
+  position:absolute;
+  width:1px;
+  height:1px;
+  overflow:hidden;
+  clip:rect(0,0,0,0);
+  white-space:nowrap
+}
+
+.language-select {
+  flex:none;
+  width:83px;
+  padding:9px 5px;
+  border:1px solid #dee7dc;
+  border-radius:10px;
+  background:#fff;
+  color:#214436;
+  font-family:inherit;
+  font-size:12px;
+  font-weight:700;
+  text-align:center;
+  cursor:pointer
 }
 
 .icon-button {
@@ -127,6 +157,17 @@ body {
   margin:28px 0 17px;
   font-size:11px;
   color:#60796a
+}
+
+.status-line #status-text {
+  flex:1;
+  min-width:0
+}
+
+.status-line .refresh-button {
+  width:33px;
+  height:33px;
+  border-radius:10px
 }
 
 .status-dot {
@@ -582,5 +623,3 @@ body {
 
 
 }
-
-
