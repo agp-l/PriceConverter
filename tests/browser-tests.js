@@ -56,6 +56,10 @@ await check('Neplatné kurzy a poškozená uložená data', () => {
   assert(restoreSettings(JSON.stringify({marginPercent:-2, buyPercent:-3})).marginPercent === -2, 'Nové nastavení má přednost');
   const travelSettings = restoreSettings(JSON.stringify({mode:'travel', selected:['PYG','EUR','CZK']}));
   assert(travelSettings.mode === 'travel' && travelSettings.selected.join(',') === 'PYG,EUR,CZK', 'Cestovní režim a pořadí měn');
+  const chartSettings = restoreSettings(JSON.stringify({mode:'chart',showChartPreview:false,chartRange:'3M'}));
+  assert(chartSettings.mode === 'chart' && !chartSettings.showChartPreview && chartSettings.chartRange === '3M', 'Uložený graf');
+  const invalidChart = restoreSettings(JSON.stringify({mode:'other',showChartPreview:'false',chartRange:'0D'}));
+  assert(invalidChart.mode === 'convert' && invalidChart.showChartPreview && invalidChart.chartRange === '12M', 'Neplatné nastavení grafu');
 });
 
 await check('Výpadek zdroje neodstaví dostupný kurz', async () => {

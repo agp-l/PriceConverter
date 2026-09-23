@@ -5,6 +5,7 @@ import {parsePercent, tradeQuote, travelQuote, compareTravelOffer} from './quote
 
 const STORAGE_KEY = 'priceconverter:v1';
 const DEFAULT_CURRENCIES = ['CZK', 'EUR', 'USD'];
+const CHART_RANGES = ['1M', '3M', '12M'];
 const CURRENCY_CODES = new Set(CURRENCIES.map(currency => currency.code));
 const isRate = value => typeof value === 'number' && Number.isFinite(value) && value > 0;
 const searchable = value => value.toLocaleLowerCase('cs').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -35,7 +36,9 @@ export function restoreSettings(json) {
   const marginPercent = savedPercent(saved.marginPercent, savedPercent(legacyMargin, 2));
   return {selected, unit:saved.unit === 'SATS' ? 'SATS' : 'BTC', cache,
     languageMode:['cs', 'en'].includes(saved.languageMode) ? saved.languageMode : 'auto',
-    mode:['convert', 'travel', 'trade'].includes(saved.mode) ? saved.mode : 'convert',
+    mode:['convert', 'travel', 'trade', 'chart', 'settings'].includes(saved.mode) ? saved.mode : 'convert',
+    showChartPreview:saved.showChartPreview !== false,
+    chartRange:CHART_RANGES.includes(saved.chartRange) ? saved.chartRange : '12M',
     tradeCurrency:savedCurrency(saved.tradeCurrency, 'CZK'),
     marginPercent,
     dealerSide:saved.dealerSide === 'sell' ? 'sell' : 'buy',
@@ -99,10 +102,10 @@ export class ConverterApp {
   tr(key, parameters) { return t(this.state.language, key, parameters); }
 
   save() {
-    const {selected, unit, cache, languageMode, mode, tradeCurrency, marginPercent,
+    const {selected, unit, cache, languageMode, mode, showChartPreview, chartRange, tradeCurrency, marginPercent,
       dealerSide, dealerKind, travelFrom, travelTo} = this.state;
     try { this.win.localStorage.setItem(STORAGE_KEY, JSON.stringify({selected, unit, cache, languageMode,
-      mode, tradeCurrency, marginPercent, dealerSide, dealerKind, travelFrom, travelTo})); }
+      mode, showChartPreview, chartRange, tradeCurrency, marginPercent, dealerSide, dealerKind, travelFrom, travelTo})); }
     catch { /* Conversion remains available without local storage. */ }
   }
 
