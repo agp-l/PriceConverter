@@ -2,7 +2,7 @@
 
 A pocket-sized Bitcoin trade calculator and travel currency converter. [Open the app](https://convertor.dobrodruzi.cz/).
 
-VexlCalc is a standalone progressive web app built with HTML, CSS, and vanilla JavaScript. It runs in the browser with no account, Node.js, framework, build step, or backend. You can add it to your phone's home screen. Use the menu button to switch between **Converter**, **Currency to currency**, and **Personal trades**.
+VexlCalc is a standalone progressive web app built with HTML, CSS, and vanilla JavaScript. It runs in the browser with no account, Node.js, framework, build step, or backend. You can add it to your phone's home screen. The compact mobile layout and the side menu work on phones and desktop screens. Use the menu button to switch between **Converter**, **Currency to currency**, and **Personal trades**, install the app, or change the language.
 
 > VexlCalc is an independent project and is not affiliated with Vexl. It calculates estimates; it does not publish offers, arrange trades, or move money.
 
@@ -65,7 +65,11 @@ manifest.json    icon.svg         icon-192.png     icon-512.png
 
 Preserve their relative paths. `README.md` and `tests/` are development files and are not needed on the server. Use HTTPS for the hosted PWA; `localhost` works for local development. After uploading, reload the page. An installed copy may pick up updated cached files on a subsequent launch.
 
-On Android, use the app's **Install app** button or the browser's install/add-to-home-screen menu. On iPhone, open the site in Safari and use **Share → Add to Home Screen**. The button provides device-specific instructions when the browser does not offer an install prompt.
+On Android, use **Install app** in the app's side menu or the browser's install/add-to-home-screen menu. On iPhone, open the site in Safari and use **Share → Add to Home Screen**. The menu action provides device-specific instructions when the browser does not offer an install prompt.
+
+## Source and support
+
+The side menu links to this [open-source repository](https://github.com/agp-l/PriceConverter). Its **Support the project** action provides a Bitcoin address and a Lightning **BOLT12 offer** to copy; the Bitcoin button can also open a compatible wallet. The Lightning string begins with `lno1`, which identifies a BOLT12 offer rather than an LNURL (`lnurl1`). Use a wallet that supports BOLT12 offers.
 
 ## Project files
 
