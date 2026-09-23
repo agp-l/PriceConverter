@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {averageRates, parseAmount, btcFrom, fromBtc, fetchRates} from '../rates.js';
+import {CURRENCIES, averageRates, parseAmount, btcFrom, fromBtc, fetchRates} from '../rates.js';
+
+test('The currency catalog includes PYG and other ISO currencies', () => {
+  assert.ok(CURRENCIES.length >= 150);
+  assert.deepEqual(CURRENCIES.find(currency => currency.code === 'PYG')?.flag, '🇵🇾');
+  assert.ok(CURRENCIES.some(currency => currency.code === 'CLP'));
+});
 
 test('BTC and sats keep the same value when the unit changes', () => {
   const rates = {CZK:2_000_000};
@@ -35,6 +41,16 @@ test('One failed provider does not prevent conversion from valid providers', asy
   const result = await fetchRates(fakeFetch);
   assert.deepEqual(result.sources,['BitPay','Blockchain.info']);
   assert.ok(result.rates.CZK > 1_800_000 && result.rates.CZK < 2_000_000);
+});
+
+test('PYG from BitPay can be converted to BTC and sats', async () => {
+  const fakeFetch = async url => {
+    if (!url.includes('bitpay')) throw new Error('offline');
+    return {ok:true,json:async () => ({data:[{code:'PYG',rate:510_000_000}]})};
+  };
+  const {rates} = await fetchRates(fakeFetch);
+  assert.equal(rates.PYG,510_000_000);
+  assert.ok(Math.abs(fromBtc(btcFrom(5_100,'PYG',rates),'BTC',rates,'SATS') - 1000) < 1e-8);
 });
 
 test('All failed providers do not produce a made-up rate', async () => {

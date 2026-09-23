@@ -1,29 +1,7 @@
 // Each provider reports fiat units for one BTC. We average the inverse, as the
 // Android Price Converter does, so each available provider has equal weight.
-export const CURRENCIES = [
-  {code:'CZK',name:'Česká koruna',flag:'🇨🇿'},
-  {code:'EUR',name:'Euro',flag:'🇪🇺'},
-  {code:'USD',name:'Americký dolar',flag:'🇺🇸'},
-  {code:'GBP',name:'Britská libra',flag:'🇬🇧'},
-  {code:'PLN',name:'Polský zlotý',flag:'🇵🇱'},
-  {code:'CHF',name:'Švýcarský frank',flag:'🇨🇭'},
-  {code:'CAD',name:'Kanadský dolar',flag:'🇨🇦'},
-  {code:'AUD',name:'Australský dolar',flag:'🇦🇺'},
-  {code:'JPY',name:'Japonský jen',flag:'🇯🇵'},
-  {code:'SEK',name:'Švédská koruna',flag:'🇸🇪'},
-  {code:'NOK',name:'Norská koruna',flag:'🇳🇴'},
-  {code:'DKK',name:'Dánská koruna',flag:'🇩🇰'},
-  {code:'HUF',name:'Maďarský forint',flag:'🇭🇺'},
-  {code:'RON',name:'Rumunský leu',flag:'🇷🇴'},
-  {code:'UAH',name:'Ukrajinská hřivna',flag:'🇺🇦'},
-  {code:'TRY',name:'Turecká lira',flag:'🇹🇷'},
-  {code:'BRL',name:'Brazilský real',flag:'🇧🇷'},
-  {code:'INR',name:'Indická rupie',flag:'🇮🇳'},
-  {code:'KRW',name:'Jihokorejský won',flag:'🇰🇷'},
-  {code:'SGD',name:'Singapurský dolar',flag:'🇸🇬'},
-  {code:'MXN',name:'Mexické peso',flag:'🇲🇽'},
-  {code:'ZAR',name:'Jihoafrický rand',flag:'🇿🇦'}
-];
+import {CURRENCIES} from './currencies.js';
+export {CURRENCIES} from './currencies.js';
 
 const allowed = new Set(CURRENCIES.map(currency => currency.code));
 const validRate = value => typeof value === 'number' && Number.isFinite(value) && value > 0;
