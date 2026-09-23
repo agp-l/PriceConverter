@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#173d31">
+  <meta name="description" content="Jednoduchý převodník bitcoinu, satoshi a světových měn. Funguje i offline s posledním uloženým kurzem.">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="stylesheet" href="./style.css">
+  <title>PriceConverter · Bitcoin v kapse</title>
+</head>
+<body>
+  <div class="app-shell">
+    <main class="app" id="app">
+      <header class="app-header">
+        <div class="brand-mark" aria-hidden="true">₿</div>
+        <div class="brand-copy"><span class="eyebrow">JEDNODUŠE PŘEPOČÍTAT</span><h1>PriceConverter<span class="title-dot">.</span></h1></div>
+        <button id="refresh" class="icon-button refresh-button" type="button" title="Aktualizovat kurzy" aria-label="Aktualizovat kurzy">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.5 9A7 7 0 0 1 18 7l2 5M4 12l2 5a7 7 0 0 0 12.5-2"/></svg>
+        </button>
+      </header>
+
+      <div class="status-line" role="status" aria-live="polite"><span class="status-dot" id="status-dot"></span><span id="status-text">Načítám kurzy…</span></div>
+
+      <section class="bitcoin-card" aria-labelledby="bitcoin-label">
+        <div class="card-top"><span class="card-kicker" id="bitcoin-label">BITCOIN</span><span class="bitcoin-emblem" aria-hidden="true">₿</span></div>
+        <div class="bitcoin-input-wrap"><input id="btc-input" class="bitcoin-input" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="1" aria-label="Částka v bitcoinu nebo satoshi"><span id="btc-unit" class="input-unit">BTC</span></div>
+        <div class="card-bottom"><span id="bitcoin-caption">Digitální peníze, bez hranic.</span><div class="unit-switch" role="group" aria-label="Jednotka bitcoinu"><button type="button" id="unit-btc" class="selected" aria-pressed="true">BTC</button><button type="button" id="unit-sats" aria-pressed="false">SATS</button></div></div>
+      </section>
+
+      <section class="currencies" aria-labelledby="currencies-heading">
+        <div class="section-heading"><div><span class="eyebrow">RYCHLÝ PŘEHLED</span><h2 id="currencies-heading">Moje měny</h2></div><span id="currency-count" class="count-badge">0</span></div>
+        <div id="currency-list" class="currency-list"></div>
+        <button type="button" id="add-currency" class="add-button"><span class="plus" aria-hidden="true">+</span> Přidat měnu <span class="add-arrow" aria-hidden="true">↗</span></button>
+      </section>
+
+      <footer class="app-footer"><div class="footer-rule"></div><span>Kurzy jsou orientační</span><span aria-hidden="true">✳</span><span>1 BTC = 100 000 000 sats</span></footer>
+    </main>
+  </div>
+
+  <dialog id="currency-dialog" class="currency-dialog" aria-labelledby="dialog-title"><div class="dialog-header"><div><span class="eyebrow">NASTAVENÍ</span><h2 id="dialog-title">Přidat měnu</h2></div><button type="button" id="close-dialog" class="icon-button" aria-label="Zavřít">×</button></div><label class="search-label" for="currency-search">Hledat podle názvu nebo kódu</label><input id="currency-search" class="search-input" type="search" autocomplete="off" placeholder="Třeba PLN nebo zlotý"><div id="currency-options" class="currency-options"></div></dialog>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
