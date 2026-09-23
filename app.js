@@ -61,7 +61,9 @@ export function restoreSettings(json) {
     chartRange:CHART_RANGES.includes(saved.chartRange) ? saved.chartRange : '12M',
     tradeCurrency:savedCurrency(saved.tradeCurrency, 'CZK'),
     marginPercent,
-    dealerSide:saved.dealerSide === 'buy' ? 'buy' : 'sell',
+    // Earlier releases persisted the default buy side without a user choice.
+    dealerSide:saved.dealerSide === 'buy' && saved.dealerSideChosen === true ? 'buy' : 'sell',
+    dealerSideChosen:saved.dealerSideChosen === true,
     dealerKind:saved.dealerKind === 'bitcoin' ? 'bitcoin' : 'fiat',
     travelFrom:savedCurrency(saved.travelFrom, 'CZK'), travelTo:savedCurrency(saved.travelTo, 'EUR')};
 }
@@ -130,9 +132,10 @@ export class ConverterApp {
 
   save() {
     const {selected, unit, cache, languageMode, mode, showChartPreview, chartRange, tradeCurrency, marginPercent,
-      dealerSide, dealerKind, travelFrom, travelTo} = this.state;
+      dealerSide, dealerSideChosen, dealerKind, travelFrom, travelTo} = this.state;
     try { this.win.localStorage.setItem(STORAGE_KEY, JSON.stringify({selected, unit, cache, languageMode,
-      mode, showChartPreview, chartRange, tradeCurrency, marginPercent, dealerSide, dealerKind, travelFrom, travelTo})); }
+      mode, showChartPreview, chartRange, tradeCurrency, marginPercent, dealerSide, dealerSideChosen,
+      dealerKind, travelFrom, travelTo})); }
     catch { /* Conversion remains available without local storage. */ }
   }
 
@@ -749,7 +752,11 @@ export class ConverterApp {
       this.syncChartSettings(); this.save();
     });
     for (const [button, side] of [[elements.dealerBuy, 'buy'], [elements.dealerSell, 'sell']]) {
-      button.addEventListener('click', () => { this.state.dealerSide = side; this.save(); this.renderTrade(); });
+      button.addEventListener('click', () => {
+        this.state.dealerSide = side;
+        this.state.dealerSideChosen = true;
+        this.save(); this.renderTrade();
+      });
     }
     elements.dealerCurrency.addEventListener('change', () => {
       this.state.tradeCurrency = elements.dealerCurrency.value;

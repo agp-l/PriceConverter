@@ -52,7 +52,8 @@ await check('Neplatné kurzy a poškozená uložená data', () => {
   assert(settings.marginPercent === 3 && settings.mode === 'trade' && settings.tradeCurrency === 'PYG', 'Nastavení směny');
   assert(restoreSettings('{}').marginPercent === 2, 'Výchozí výhoda');
   assert(restoreSettings('{}').dealerSide === 'sell', 'Výchozí prodej BTC');
-  assert(restoreSettings('{"dealerSide":"buy"}').dealerSide === 'buy', 'Uložený nákup BTC');
+  assert(restoreSettings('{"dealerSide":"buy"}').dealerSide === 'sell', 'Starý automatický nákup přejde na prodej');
+  assert(restoreSettings('{"dealerSide":"buy","dealerSideChosen":true}').dealerSide === 'buy', 'Nově zvolený nákup zůstane');
   assert(restoreSettings('{"dealerSide":"sell"}').dealerSide === 'sell', 'Uložený prodej BTC');
   assert(restoreSettings(JSON.stringify({buyPercent:-3, sellPercent:4})).marginPercent === 3, 'Převod staré nákupní ceny');
   assert(restoreSettings(JSON.stringify({buyPercent:-3, sellPercent:4, dealerSide:'sell'})).marginPercent === 4, 'Převod staré prodejní ceny');
@@ -278,6 +279,8 @@ await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
     assert(doc.querySelector('#margin-preview').textContent.includes('above'), 'Vysvětlení výchozí prodejní ceny');
     assert(doc.querySelector('#offer-fiat-label').textContent.includes('receive'), 'Prodej BTC přijímá fiat');
     doc.querySelector('#dealer-buy').click();
+    assert(JSON.parse(localStorage.getItem(key)).dealerSideChosen === true &&
+      JSON.parse(localStorage.getItem(key)).dealerSide === 'buy', 'Ručně vybraný nákup se ukládá');
     assert(doc.querySelector('#margin-preview').textContent.includes('below'), 'Vysvětlení nákupní ceny');
     assert(doc.querySelector('#offer-fiat-label').textContent.includes('pay'), 'Směr nákupu BTC');
     const source = doc.querySelector('#market-source');
