@@ -56,3 +56,18 @@ export function travelQuote(amount, from, to, rates) {
   const result = amount * rate;
   return validRate(rate) && Number.isFinite(result) ? {rate, result} : null;
 }
+
+// The traveler pays `amount` in `from` and receives `to`. The quoted price
+// may be target currency per source unit or source currency per target unit.
+export function compareTravelOffer(amount, from, to, rates, quotedRate, basis = 'from', fee = 0) {
+  const reference = travelQuote(amount, from, to, rates);
+  if (!reference || !validRate(quotedRate) || !['from', 'to'].includes(basis) ||
+      !Number.isFinite(fee) || fee < 0 || fee > amount) return null;
+  const effectiveRate = basis === 'from' ? quotedRate : 1 / quotedRate;
+  const received = (amount - fee) * effectiveRate;
+  const difference = received - reference.result;
+  const sourceDifference = difference / reference.rate;
+  const percent = amount > 0 ? difference / reference.result * 100 : 0;
+  return [effectiveRate, received, difference, sourceDifference, percent].every(Number.isFinite) &&
+    validRate(effectiveRate) ? {reference, received, difference, sourceDifference, percent} : null;
+}

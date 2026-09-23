@@ -2,7 +2,7 @@ import {detectLanguage, resolveLanguage, t} from '../i18n.js';
 import {getCurrencies} from '../currencies.js';
 import {averageRates, parseAmount, btcFrom, fromBtc, fetchRates} from '../rates.js';
 import {restoreSettings, ConverterApp} from '../app.js';
-import {parsePercent, tradeQuote, travelQuote} from '../quotes.js';
+import {parsePercent, tradeQuote, travelQuote, compareTravelOffer} from '../quotes.js';
 
 const results = document.querySelector('#results');
 let passed = 0;
@@ -94,6 +94,22 @@ await check('Cestovní přepočet mezi fiat měnami', () => {
   const quote = travelQuote(100, 'CZK', 'EUR', {CZK:2_000_000, EUR:80_000});
   assert(quote.rate === 0.04 && quote.result === 4, 'Křížový kurz');
   assert(travelQuote(100, 'CZK', 'PYG', {CZK:2_000_000}) === null, 'Chybějící kurz');
+});
+
+await check('Srovnání kurzu směnárny v obou zápisech a s poplatkem', () => {
+  const rates = {CZK:2_000_000, EUR:80_000}; // Reference: 1 CZK = 0.04 EUR.
+  const normal = compareTravelOffer(1000,'CZK','EUR',rates,0.038,'from');
+  assert(normal.reference.result === 40 && normal.received === 38, 'Částka u směnárny');
+  assert(normal.difference === -2 && normal.sourceDifference === -50 && normal.percent === -5, 'Kolik cestovatel ztrácí');
+  const inverse = compareTravelOffer(1000,'CZK','EUR',rates,1/0.038,'to');
+  assert(Math.abs(inverse.received - 38) < 1e-9, 'Opačný zápis kurzu');
+  const fee = compareTravelOffer(1000,'CZK','EUR',rates,0.04,'from',50);
+  assert(fee.received === 38 && fee.difference === -2, 'Pevný poplatek');
+  const better = compareTravelOffer(1000,'CZK','EUR',rates,0.042,'from');
+  assert(better.difference > 0 && better.sourceDifference > 0, 'Lepší nabídka');
+  assert(compareTravelOffer(1000,'CZK','EUR',rates,0,'from') === null, 'Nulový kurz');
+  assert(compareTravelOffer(1000,'CZK','EUR',rates,0.04,'from',1001) === null, 'Poplatek vyšší než částka');
+  assert(compareTravelOffer(1000,'CZK','PYG',rates,1,'from') === null, 'Bez referenčního kurzu se nesrovnává');
 });
 
 await check('Kopírování darovacích údajů a ruční záloha', async () => {
