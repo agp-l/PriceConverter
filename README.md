@@ -75,7 +75,7 @@ On Android, use **Install app** in the app's side menu or the browser's install/
 
 ## Source and support
 
-The side menu links to this [open-source repository](https://github.com/agp-l/PriceConverter). Its **Support the project** action provides a Bitcoin address and a Lightning **BOLT12 offer** to copy; the Bitcoin button can also open a compatible wallet. The Lightning string begins with `lno1`, which identifies a BOLT12 offer rather than an LNURL (`lnurl1`). Use a wallet that supports BOLT12 offers.
+The side menu links to this [open-source repository](https://github.com/agp-l/PriceConverter). Its **Support the project** action provides a `bitcoin:?lno=…` payment link that can be copied or opened in a compatible wallet, plus the raw Lightning **BOLT12 offer** for copying into a BOLT12 wallet. Both represent the same offer. The link has no on-chain Bitcoin address or fallback payment method.
 
 ## Project files
 

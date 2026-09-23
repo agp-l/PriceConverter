@@ -267,8 +267,12 @@ await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
     assert(doc.querySelector('#app-menu a[href="https://github.com/agp-l/PriceConverter"]'), 'Otevřený zdrojový kód');
     doc.querySelector('#donate-button').click();
     assert(doc.querySelector('#donate-dialog').open && !doc.querySelector('#app-menu').open, 'Darovací dialog');
-    assert(doc.querySelector('#donate-btc').value === 'bc1p8p5quw4s8t2ugspr2lf4mz5hqypw52az4hexp9a4nt80kyjxuayqqde2d7', 'Bitcoin adresa');
-    assert(doc.querySelector('#donate-lightning').value.startsWith('lno1') && doc.querySelector('#donate-lightning').value.length > 250, 'Lightning nabídka');
+    const offer = 'lno1pgqppmsrse80qf0aara4slvcjxrvu6j2rp5ftmjy4yntlsmsutpkvkt6878s9djjdxvyqd662tfrqukn702zjpdf3d880gn796tfwxqx4f0ghhr2qgp0u6v74fjryur6yu6a8edrarxhlexn6c2zac6422fuhzl7wzxfn4sqxv4emt4kt78quvcs4sptd9cs3f8vxmqfe4khrd809ngvs87yjgljvxz8fcduqs522rryf5n2qmm2zekjaz2qy58e92uv063uu98kqd9v5996drn7pp49slm5jl5086f2jenlt58aqqeqcykddz9dgp7fxza5z2ywmrf9uyfxkcm90cd46kge4fsxts5udytf2mjj4z2xrvddvl37s59v037dkfrq';
+    const uri = `bitcoin:?lno=${offer}`;
+    assert(doc.querySelector('#donate-uri').value === uri, 'Bitcoin platební odkaz');
+    assert(doc.querySelector('#open-uri-wallet').getAttribute('href') === uri, 'Otevření stejné nabídky v peněžence');
+    assert(doc.querySelector('#donate-lightning').value === offer, 'Lightning nabídka');
+    assert(doc.querySelector('#copy-uri') && doc.querySelector('#copy-lightning') && !doc.querySelector('#donate-btc'), 'Tlačítka kopírování bez staré adresy');
     doc.querySelector('#close-donate').click();
     doc.querySelector('#menu-toggle').click();
     doc.querySelector('#tab-travel').click();
