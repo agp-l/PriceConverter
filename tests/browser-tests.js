@@ -112,6 +112,16 @@ await check('Srovnání kurzu směnárny v obou zápisech a s poplatkem', () => 
   assert(compareTravelOffer(1000,'CZK','PYG',rates,1,'from') === null, 'Bez referenčního kurzu se nesrovnává');
 });
 
+await check('Roční graf BTC načítá správný symbol a interval', () => {
+  let captured;
+  const app = {miniChartLoaded:false, state:{language:'cs'}, elements:{miniChart:{},miniChartFallback:{}},
+    embedChart:(container,fallback,filename,config) => { captured = {filename,config}; return true; }};
+  ConverterApp.prototype.loadMiniChart.call(app);
+  assert(app.miniChartLoaded && captured.filename === 'embed-widget-mini-symbol-overview.js', 'Roční widget');
+  assert(captured.config.symbol === 'BITSTAMP:BTCUSD' && captured.config.dateRange === '12M'
+    && captured.config.chartOnly === true, 'Symbol a rozsah grafu');
+});
+
 await check('Kopírování darovacích údajů a ruční záloha', async () => {
   let copied = '';
   const input = {value:'  bc1ptest  ', focus() { this.focused = true; }, select() { this.selected = true; }};
@@ -172,9 +182,16 @@ await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
     doc.querySelector('#tab-travel').click();
     assert(!doc.querySelector('#travel-pane').hidden && doc.querySelector('#convert-pane').hidden && !doc.querySelector('#app-menu').open, 'Samostatný cestovní převod');
     assert(doc.querySelector('#screen-title').textContent === 'Currency to currency', 'Titulek v horní liště');
+    const offerRate = doc.querySelector('#travel-offer-rate');
+    const offerBasis = doc.querySelector('#travel-offer-basis');
+    assert(offerBasis.options[0].textContent.includes('CZK') && doc.querySelector('#travel-fee'), 'Kurz směnárny a poplatek');
+    offerBasis.value = 'to'; offerBasis.dispatchEvent(new Event('change', {bubbles:true}));
+    assert(doc.querySelector('#travel-offer-rate-label').textContent.includes('CZK'), 'Jednotka opačného zápisu kurzu');
+    offerRate.value = '25'; offerRate.dispatchEvent(new Event('input', {bubbles:true}));
+    assert(!doc.querySelector('#travel-comparison').hidden || !doc.querySelector('#travel-offer-error').hidden, 'Nabídka směnárny se vyhodnocuje');
     const from = doc.querySelector('#travel-from'); const to = doc.querySelector('#travel-to');
     const originalFrom = from.value; doc.querySelector('#travel-swap').click();
-    assert(to.value === originalFrom, 'Prohození cestovních měn');
+    assert(to.value === originalFrom && offerRate.value === '', 'Prohození měn odstraní starý kurz');
     assert(JSON.parse(localStorage.getItem(key)).mode === 'travel', 'Obnovení cestovní obrazovky');
     doc.querySelector('#menu-toggle').click();
     doc.querySelector('#tab-trade').click();
@@ -211,6 +228,11 @@ await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
     doc.querySelector('#menu-toggle').click();
     doc.querySelector('#tab-convert').click();
     assert(!doc.querySelector('#convert-pane').hidden && doc.querySelector('#travel-pane').hidden, 'Návrat do převodníku');
+    assert(doc.querySelector('.chart-preview') && doc.querySelector('.chart-preview').textContent.includes('1 year'), 'Roční náhled grafu');
+    doc.querySelector('#open-chart').click();
+    assert(doc.querySelector('#chart-dialog').open, 'Otevření velkého grafu');
+    doc.querySelector('#close-chart').click();
+    assert(!doc.querySelector('#chart-dialog').open, 'Zavření velkého grafu');
   } finally {
     iframe.remove();
     if (previous === null) localStorage.removeItem(key);

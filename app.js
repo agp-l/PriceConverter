@@ -1,7 +1,7 @@
 import {parseAmount, btcFrom, fromBtc, fetchRates} from './rates.js';
 import {CURRENCIES, getCurrencies} from './currencies.js';
 import {resolveLanguage, t, ageText, sourceCount} from './i18n.js';
-import {parsePercent, tradeQuote, travelQuote} from './quotes.js';
+import {parsePercent, tradeQuote, travelQuote, compareTravelOffer} from './quotes.js';
 
 const STORAGE_KEY = 'priceconverter:v1';
 const DEFAULT_CURRENCIES = ['CZK', 'EUR', 'USD'];
@@ -62,6 +62,14 @@ export class ConverterApp {
       paneConvert:'convert-pane', paneTravel:'travel-pane', paneTrade:'trade-pane',
       travelAmount:'travel-amount', travelFrom:'travel-from', travelTo:'travel-to', travelSwap:'travel-swap',
       travelValue:'travel-value', travelRate:'travel-rate',
+      travelOfferBasis:'travel-offer-basis', travelOfferRate:'travel-offer-rate', travelFee:'travel-fee',
+      travelOfferRateLabel:'travel-offer-rate-label', travelFeeLabel:'travel-fee-label',
+      travelComparison:'travel-comparison', travelOfferValue:'travel-offer-value',
+      travelDifference:'travel-difference', travelPercent:'travel-percent',
+      travelSourceEquivalent:'travel-source-equivalent', travelOfferError:'travel-offer-error',
+      miniChart:'mini-chart', miniChartFallback:'mini-chart-fallback', openChart:'open-chart',
+      chartDialog:'chart-dialog', chartClose:'close-chart', largeChart:'large-chart',
+      largeChartFallback:'large-chart-fallback',
       dealerBuy:'dealer-buy', dealerSell:'dealer-sell',
       dealerCurrency:'dealer-currency', marginPercent:'margin-percent', marginPreview:'margin-preview',
       marketSource:'market-source', marketTools:'market-tools', manualMarketWrap:'manual-market-wrap',
@@ -84,6 +92,8 @@ export class ConverterApp {
     this.tradeFiatRaw = '10000';
     this.tradeBitcoinRaw = stored.unit === 'SATS' ? '1000000' : '0.01';
     this.marketSource = 'live';
+    this.miniChartLoaded = false;
+    this.largeChartLoaded = false;
   }
 
   tr(key, parameters) { return t(this.state.language, key, parameters); }
@@ -275,12 +285,98 @@ export class ConverterApp {
     const amount = parseAmount(elements.travelAmount.value, state.language);
     const quote = travelQuote(amount, state.travelFrom, state.travelTo, state.cache?.rates);
     const locale = state.language === 'cs' ? 'cs-CZ' : 'en-US';
+    const number = new Intl.NumberFormat(locale, {maximumFractionDigits:8});
+    const codes = {from:state.travelFrom, to:state.travelTo};
+    elements.travelOfferBasis.options[0].textContent = this.tr('quoteForFrom', codes);
+    elements.travelOfferBasis.options[1].textContent = this.tr('quoteForTo', codes);
+    elements.travelOfferRateLabel.textContent = this.tr('exchangeRateValue', {
+      code:elements.travelOfferBasis.value === 'from' ? state.travelTo : state.travelFrom});
+    elements.travelFeeLabel.textContent = this.tr('exchangeFee', {code:state.travelFrom});
     elements.travelValue.textContent = quote
-      ? `${new Intl.NumberFormat(locale, {maximumFractionDigits:8}).format(quote.result)} ${state.travelTo}` : '—';
+      ? `${number.format(quote.result)} ${state.travelTo}` : '—';
     elements.travelRate.textContent = quote
       ? this.tr('travelRate', {from:state.travelFrom, to:state.travelTo,
         rate:new Intl.NumberFormat(locale, {maximumSignificantDigits:8}).format(quote.rate)})
       : this.tr(amount === null ? 'invalidAmount' : 'noRate');
+    const rateRaw = elements.travelOfferRate.value.trim();
+    const feeRaw = elements.travelFee.value.trim();
+    const offeredRate = parseAmount(rateRaw, state.language);
+    const fee = feeRaw ? parseAmount(feeRaw, state.language) : 0;
+    const comparison = rateRaw && quote && offeredRate !== null && fee !== null
+      ? compareTravelOffer(amount, state.travelFrom, state.travelTo, state.cache?.rates,
+        offeredRate, elements.travelOfferBasis.value, fee) : null;
+    elements.travelComparison.hidden = !comparison;
+    elements.travelOfferError.hidden = !rateRaw || Boolean(comparison);
+    if (rateRaw && !comparison) elements.travelOfferError.textContent = !quote ? this.tr('compareMissingRate')
+      : !offeredRate ? this.tr('invalidOfferRate') : fee === null || fee > amount
+        ? this.tr('invalidExchangeFee') : this.tr('invalidOfferRate');
+    if (!comparison) return;
+    const {received, difference, sourceDifference, percent} = comparison;
+    const direction = Math.abs(percent) < 1e-9 ? 'even' : difference < 0 ? 'loss' : 'gain';
+    elements.travelComparison.dataset.result = direction;
+    elements.travelOfferValue.textContent = `${number.format(received)} ${state.travelTo}`;
+    elements.travelDifference.textContent = this.tr(direction === 'loss' ? 'exchangeLoss'
+      : direction === 'gain' ? 'exchangeGain' : 'exchangeEven',
+    {amount:`${number.format(Math.abs(difference))} ${state.travelTo}`});
+    elements.travelPercent.textContent = `${difference > 0 ? '+' : difference < 0 ? '−' : ''}${new Intl.NumberFormat(locale,
+      {maximumFractionDigits:2}).format(Math.abs(percent))} %`;
+    elements.travelSourceEquivalent.textContent = this.tr('exchangeEquivalent',
+      {amount:`${number.format(Math.abs(sourceDifference))} ${state.travelFrom}`});
+  }
+
+  embedChart(container, fallback, filename, config) {
+    if (!this.win.navigator.onLine) {
+      container.hidden = true;
+      fallback.hidden = false;
+      return false;
+    }
+    container.hidden = false;
+    fallback.hidden = true;
+    const script = this.doc.createElement('script');
+    script.src = `https://s3.tradingview.com/external-embedding/${filename}`;
+    script.async = true;
+    script.textContent = JSON.stringify(config);
+    script.addEventListener('error', () => {
+      container.hidden = true; fallback.hidden = false; script.remove();
+      if (container === this.elements.miniChart) this.miniChartLoaded = false;
+      else this.largeChartLoaded = false;
+    }, {once:true});
+    container.append(script);
+    return true;
+  }
+
+  loadMiniChart() {
+    const {miniChart, miniChartFallback} = this.elements;
+    if (this.miniChartLoaded) {
+      miniChart.hidden = !this.win.navigator.onLine;
+      miniChartFallback.hidden = this.win.navigator.onLine;
+      return;
+    }
+    this.miniChartLoaded = this.embedChart(miniChart, miniChartFallback,
+      'embed-widget-mini-symbol-overview.js', {
+        symbol:'BITSTAMP:BTCUSD', width:'100%', height:'100%', locale:'en',
+        dateRange:'12M', colorTheme:'light', chartOnly:true, noTimeScale:true,
+        isTransparent:true, autosize:true, trendLineColor:'rgba(110, 52, 168, 1)',
+        underLineColor:'rgba(157, 103, 205, 0.22)', underLineBottomColor:'rgba(157, 103, 205, 0)'
+      });
+  }
+
+  openLargeChart() {
+    const {chartDialog, largeChart, largeChartFallback} = this.elements;
+    if (!chartDialog.open) chartDialog.showModal();
+    if (this.largeChartLoaded) {
+      largeChart.hidden = !this.win.navigator.onLine;
+      largeChartFallback.hidden = this.win.navigator.onLine;
+      return;
+    }
+    this.largeChartLoaded = this.embedChart(largeChart, largeChartFallback,
+      'embed-widget-advanced-chart.js', {
+        autosize:true, symbol:'BITSTAMP:BTCUSD', interval:'W', range:'12M',
+        timezone:'Etc/UTC', theme:'light', style:'1', locale:'en',
+        backgroundColor:'#faf8ff', gridColor:'rgba(57, 32, 101, 0.08)',
+        hide_side_toolbar:true, allow_symbol_change:false, withdateranges:true,
+        save_image:false
+      });
   }
 
   renderTrade() {
@@ -382,6 +478,8 @@ export class ConverterApp {
     const {state, elements} = this;
     const amount = parseAmount(state.raw, state.language);
     const travelAmount = parseAmount(elements.travelAmount.value, state.language);
+    const travelOfferRate = parseAmount(elements.travelOfferRate.value, state.language);
+    const travelFee = parseAmount(elements.travelFee.value, state.language);
     const tradeFiatAmount = parseAmount(this.tradeFiatRaw, state.language);
     const tradeBitcoinAmount = parseAmount(this.tradeBitcoinRaw, state.language);
     const marginPercent = parsePercent(elements.marginPercent.value, state.language);
@@ -391,6 +489,9 @@ export class ConverterApp {
     this.setFormatters();
     if (amount !== null) state.raw = this.formatEntry(amount, state.raw, state.anchor);
     if (travelAmount !== null) elements.travelAmount.value = this.formatEntry(travelAmount, elements.travelAmount.value, state.travelFrom);
+    if (travelOfferRate !== null) elements.travelOfferRate.value = this.formatEntry(travelOfferRate,
+      elements.travelOfferRate.value, elements.travelOfferBasis.value === 'from' ? state.travelTo : state.travelFrom);
+    if (travelFee !== null) elements.travelFee.value = this.formatEntry(travelFee, elements.travelFee.value, state.travelFrom);
     if (tradeFiatAmount !== null) this.tradeFiatRaw = this.formatEntry(tradeFiatAmount, this.tradeFiatRaw, state.tradeCurrency);
     if (tradeBitcoinAmount !== null) this.tradeBitcoinRaw = this.formatEntry(tradeBitcoinAmount, this.tradeBitcoinRaw, 'BTC');
     elements.dealerAmount.value = state.dealerKind === 'fiat' ? this.tradeFiatRaw : this.tradeBitcoinRaw;
@@ -502,12 +603,22 @@ export class ConverterApp {
       });
     }
     elements.travelAmount.addEventListener('input', () => this.renderTravel());
-    elements.travelFrom.addEventListener('change', () => { this.state.travelFrom = elements.travelFrom.value; this.save(); this.renderTravel(); });
-    elements.travelTo.addEventListener('change', () => { this.state.travelTo = elements.travelTo.value; this.save(); this.renderTravel(); });
+    const clearTravelOffer = () => { elements.travelOfferRate.value = ''; elements.travelFee.value = ''; };
+    elements.travelFrom.addEventListener('change', () => { this.state.travelFrom = elements.travelFrom.value; clearTravelOffer(); this.save(); this.renderTravel(); });
+    elements.travelTo.addEventListener('change', () => { this.state.travelTo = elements.travelTo.value; clearTravelOffer(); this.save(); this.renderTravel(); });
     elements.travelSwap.addEventListener('click', () => {
       [this.state.travelFrom, this.state.travelTo] = [this.state.travelTo, this.state.travelFrom];
       elements.travelFrom.value = this.state.travelFrom; elements.travelTo.value = this.state.travelTo;
+      clearTravelOffer();
       this.save(); this.renderTravel();
+    });
+    elements.travelOfferBasis.addEventListener('change', () => { elements.travelOfferRate.value = ''; this.renderTravel(); });
+    elements.travelOfferRate.addEventListener('input', () => this.renderTravel());
+    elements.travelFee.addEventListener('input', () => this.renderTravel());
+    elements.openChart.addEventListener('click', () => this.openLargeChart());
+    elements.chartClose.addEventListener('click', () => elements.chartDialog.close());
+    elements.chartDialog.addEventListener('click', event => {
+      if (event.target === elements.chartDialog) elements.chartDialog.close();
     });
     for (const [button, side] of [[elements.dealerBuy, 'buy'], [elements.dealerSell, 'sell']]) {
       button.addEventListener('click', () => { this.state.dealerSide = side; this.save(); this.renderTrade(); });
@@ -559,10 +670,15 @@ export class ConverterApp {
     win.addEventListener('beforeinstallprompt', event => { event.preventDefault(); this.installPrompt = event; this.updateInstallButton(); });
     win.addEventListener('appinstalled', () => { this.installPrompt = null; elements.install.hidden = true; });
     win.matchMedia('(display-mode: standalone)').addEventListener?.('change', () => this.updateInstallButton());
-    win.addEventListener('online', () => { this.showStatus(); this.refresh(); });
-    win.addEventListener('offline', () => this.showStatus());
+    win.addEventListener('online', () => {
+      this.showStatus(); this.refresh(); this.loadMiniChart();
+      if (elements.chartDialog.open) this.openLargeChart();
+    });
+    win.addEventListener('offline', () => { this.showStatus(); this.loadMiniChart(); });
     win.setInterval(() => this.showStatus(), 60_000);
     this.applyLanguage(); this.updateInstallButton(); this.refresh();
+    if (this.doc.readyState === 'complete') win.setTimeout(() => this.loadMiniChart(), 0);
+    else win.addEventListener('load', () => this.loadMiniChart(), {once:true});
     if ('serviceWorker' in win.navigator && win.isSecureContext) win.navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
 }

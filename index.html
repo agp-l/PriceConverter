@@ -34,6 +34,13 @@
         <div class="card-bottom"><div class="unit-switch" role="group" aria-label="Jednotka bitcoinu" data-i18n-aria-label="bitcoinUnit"><button type="button" id="unit-btc" class="selected" aria-pressed="true">BTC</button><button type="button" id="unit-sats" aria-pressed="false">SATS</button></div></div>
       </section>
 
+      <section class="chart-preview" aria-label="Graf bitcoinu" data-i18n-aria-label="chartTitle">
+        <div class="chart-preview-top"><span data-i18n="chartPeriod">BTC/USD · 1 rok</span><button id="open-chart" type="button" data-i18n="openChart">Otevřít graf ↗</button></div>
+        <div id="mini-chart" class="chart-embed tradingview-widget-container"><div class="tradingview-widget-container__widget"></div></div>
+        <p id="mini-chart-fallback" class="chart-fallback" data-i18n="chartOffline" hidden>Graf je dostupný online.</p>
+        <a class="chart-credit" href="https://www.tradingview.com/symbols/BTCUSD/?exchange=BITSTAMP" target="_blank" rel="noopener nofollow noreferrer">TradingView · BITSTAMP:BTCUSD</a>
+      </section>
+
       <section class="currencies" aria-labelledby="currencies-heading">
         <div class="section-heading"><h2 id="currencies-heading" data-i18n="myCurrencies">Měny</h2><div class="currency-actions"><span id="currency-count" class="count-badge">0</span><button type="button" id="sort-currencies" class="sort-toggle" aria-pressed="false">Seřadit</button></div></div>
         <p id="sort-hint" class="sort-hint" data-i18n="sortHint" hidden>Pořadí změníte šipkami. Ukládá se automaticky.</p>
@@ -49,7 +56,13 @@
         <label class="field-label" for="travel-amount" data-i18n="travelAmount">Kolik převést</label>
         <input id="travel-amount" class="field-input" type="text" inputmode="decimal" autocomplete="off" value="100">
         <div class="travel-pair"><label class="field-label" for="travel-from"><span data-i18n="fromCurrency">Z měny</span><select id="travel-from" class="field-select"></select></label><button type="button" id="travel-swap" class="swap-button" aria-label="Prohodit měny" data-i18n-aria-label="swapCurrencies">⇄</button><label class="field-label" for="travel-to"><span data-i18n="toCurrency">Do měny</span><select id="travel-to" class="field-select"></select></label></div>
-        <div class="travel-result" role="status" aria-live="polite"><strong id="travel-value">—</strong><small id="travel-rate"></small></div>
+        <div class="travel-result" role="status" aria-live="polite"><span data-i18n="travelReference">Podle kurzu z internetu dostanu</span><strong id="travel-value">—</strong><small id="travel-rate"></small></div>
+        <div class="travel-offer">
+          <label class="field-label" for="travel-offer-basis"><span data-i18n="exchangeRate">Kurz směnárny</span><select id="travel-offer-basis" class="field-select"><option value="from"></option><option value="to"></option></select></label>
+          <div class="travel-offer-fields"><label class="field-label" for="travel-offer-rate"><span id="travel-offer-rate-label" data-i18n="exchangeRateValue">Nabízený kurz</span><input id="travel-offer-rate" class="field-input" type="text" inputmode="decimal" autocomplete="off" placeholder="0"></label><label class="field-label" for="travel-fee"><span id="travel-fee-label" data-i18n="exchangeFee">Poplatek</span><input id="travel-fee" class="field-input" type="text" inputmode="decimal" autocomplete="off" placeholder="0"></label></div>
+          <div id="travel-comparison" class="travel-comparison" role="status" aria-live="polite" hidden><span data-i18n="exchangeReceived">Ve směnárně dostanu</span><strong id="travel-offer-value"></strong><div class="travel-difference"><b id="travel-difference"></b><small id="travel-percent"></small></div><small id="travel-source-equivalent"></small></div>
+          <p id="travel-offer-error" class="travel-offer-error" role="status" aria-live="polite" hidden></p>
+        </div>
       </section>
       </div>
 
@@ -86,6 +99,7 @@
 
   <dialog id="currency-dialog" class="currency-dialog" aria-labelledby="dialog-title"><div class="dialog-header"><div><span class="eyebrow" data-i18n="settings">NASTAVENÍ</span><h2 id="dialog-title" data-i18n="addCurrency">Přidat měnu</h2></div><button type="button" id="close-dialog" class="icon-button" aria-label="Zavřít" data-i18n-aria-label="close">×</button></div><label class="search-label" for="currency-search" data-i18n="searchLabel">Hledat podle názvu nebo kódu</label><input id="currency-search" class="search-input" type="search" autocomplete="off" placeholder="Třeba PLN nebo zlotý" data-i18n-placeholder="searchPlaceholder"><div id="currency-options" class="currency-options"></div></dialog>
   <dialog id="install-dialog" class="currency-dialog install-dialog" aria-labelledby="install-title"><div class="dialog-header"><div><span class="eyebrow" data-i18n="installEyebrow">APLIKACE V MOBILU</span><h2 id="install-title" data-i18n="installTitle">Přidat na plochu</h2></div><button type="button" id="close-install" class="icon-button" aria-label="Zavřít" data-i18n-aria-label="close">×</button></div><p data-i18n="installIntro">Otevřete si kalkulačku jedním klepnutím přímo z plochy.</p><p id="install-instructions"></p></dialog>
+  <dialog id="chart-dialog" class="chart-dialog" aria-labelledby="chart-dialog-title"><div class="chart-dialog-header"><h2 id="chart-dialog-title" data-i18n="chartTitle">Graf BTC/USD</h2><button id="close-chart" class="icon-button" type="button" aria-label="Zavřít" data-i18n-aria-label="close">×</button></div><div id="large-chart" class="large-chart tradingview-widget-container"><div class="tradingview-widget-container__widget"></div></div><p id="large-chart-fallback" class="chart-fallback" data-i18n="chartOffline" hidden>Graf je dostupný online.</p><a class="chart-credit" href="https://www.tradingview.com/symbols/BTCUSD/?exchange=BITSTAMP" target="_blank" rel="noopener nofollow noreferrer" data-i18n="chartOnTradingView">Otevřít na TradingView ↗</a></dialog>
   <dialog id="donate-dialog" class="currency-dialog donate-dialog" aria-labelledby="donate-title">
     <div class="dialog-header"><h2 id="donate-title" data-i18n="donate">Podpořit projekt</h2><button type="button" id="close-donate" class="icon-button" aria-label="Zavřít" data-i18n-aria-label="close">×</button></div>
     <div class="donate-method"><label for="donate-btc" data-i18n="donateBitcoin">Bitcoin</label><textarea id="donate-btc" readonly rows="2" spellcheck="false">bc1p8p5quw4s8t2ugspr2lf4mz5hqypw52az4hexp9a4nt80kyjxuayqqde2d7</textarea><div class="donate-actions"><button id="copy-btc" type="button" data-i18n="copyAddress">Kopírovat adresu</button><a id="open-btc-wallet" href="bitcoin:bc1p8p5quw4s8t2ugspr2lf4mz5hqypw52az4hexp9a4nt80kyjxuayqqde2d7" data-i18n="openWallet">Otevřít peněženku</a></div></div>

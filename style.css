@@ -293,6 +293,45 @@ body {
   justify-content:flex-end
 }
 
+.chart-preview {
+  padding:8px 11px 6px;
+  margin-top:10px;
+  border:1px solid #e6daef;
+  border-radius:7px;
+  background:#fff
+}
+.chart-preview-top,.chart-dialog-header {
+  display:flex;align-items:center;justify-content:space-between;gap:8px
+}
+.chart-preview-top span { color:#392065;font-size:11px;font-weight:800 }
+.chart-preview-top button {
+  border:0;background:transparent;color:#673996;font-family:inherit;
+  font-size:11px;font-weight:750;cursor:pointer
+}
+.chart-embed { width:100%;height:94px;overflow:hidden }
+.chart-embed .tradingview-widget-container__widget,.large-chart .tradingview-widget-container__widget {
+  width:100%;height:100%
+}
+.chart-credit { display:block;margin-top:2px;color:#746386;font-size:9px;text-decoration:none }
+.chart-fallback { margin:10px 0;color:#746386;font-size:12px }
+.chart-dialog {
+  width:min(calc(100% - 16px),1000px);
+  height:min(90dvh,720px);
+  max-width:none;
+  max-height:none;
+  padding:12px;
+  border:0;
+  border-radius:8px;
+  background:#faf8ff;
+  color:#392065
+}
+.chart-dialog[open] { display:flex;flex-direction:column }
+.chart-dialog::backdrop { background:#130c23bd }
+.chart-dialog-header { flex:none;margin-bottom:8px }
+.chart-dialog-header h2 { margin:0;font-size:16px }
+.large-chart { flex:1;min-height:220px;overflow:hidden }
+.chart-dialog>.chart-credit { margin-top:7px;font-size:11px }
+
 .unit-switch {
   display:flex;
   gap:2px;
@@ -668,8 +707,20 @@ body {
   color:#fff
 }
 
+.travel-result>span,.travel-comparison>span { font-size:11px;color:#e8d7f2 }
 .travel-result strong { font-size:24px;letter-spacing:-.04em;overflow-wrap:anywhere }
 .travel-result small { color:#ead7f6;font-size:11px }
+.travel-offer { display:grid;gap:9px;margin-top:13px;padding-top:13px;border-top:1px solid #e6daef }
+.travel-offer-fields { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px }
+.travel-comparison { display:grid;gap:5px;padding:12px;border:1px solid #e2d3ee;border-radius:7px;background:#f4eefb }
+.travel-comparison>span { color:#6e5685 }
+.travel-comparison strong { font-size:22px;letter-spacing:-.04em;overflow-wrap:anywhere }
+.travel-difference { display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px 8px }
+.travel-difference b { font-size:14px;color:#a04456 }
+.travel-comparison[data-result="gain"] .travel-difference b { color:#23735d }
+.travel-comparison[data-result="even"] .travel-difference b { color:#392065 }
+.travel-comparison small { color:#6e5685;font-size:11px }
+.travel-offer-error { margin:0;color:#a04456;font-size:11px }
 .helper-text { margin:7px 0 0;color:#7d6e8d;font-size:10px;line-height:1.45 }
 
 .trade-side {
