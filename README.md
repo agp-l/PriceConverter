@@ -16,6 +16,10 @@ VexlCalc is a standalone progressive web app built with HTML, CSS, and vanilla J
 
 The converter shows your selected currencies together and updates them when you edit any amount. The separate **Currency to currency** screen is for a quick pair conversion: choose two fiat currencies, enter an amount, and swap the direction with one tap. Its estimate is derived from the available BTC prices: **target fiat per BTC ÷ source fiat per BTC**. It is not a bank or currency exchange quote. A currency can be listed without having a rate from the current providers; the app shows that a rate is missing instead of inventing one.
 
+On that screen, enter the **exchange counter's quoted rate** in whichever direction its price board uses: how much target currency you get for one source unit, or how much source currency you pay for one target unit. Optionally enter a fixed fee in the **source** currency. The app compares what you receive at the counter (after that fee) with what the same total source amount would yield at the online reference rate. It shows the gain or loss in the currency received, the percentage of the reference result, and the equivalent amount in the currency paid. Switching either currency or swapping the direction clears the old quoted rate and fee to prevent applying them to a different pair. Without a valid reference rate it cannot calculate a comparison; the exchange counter's rate by itself is insufficient.
+
+The converter also shows a compact **12-month BTC/USD** chart from TradingView (Bitstamp market). Open the full interactive chart from the preview. Charts need an internet connection and are provided separately from the three-source reference rates used by calculations; their displayed price need not match the converter. The full chart loads only when opened. TradingView's embedded chart controls appear in English; the app's own labels remain available in Czech and English.
+
 ### Calculate a personal Bitcoin trade
 
 The **Personal trades** screen uses *your* perspective throughout:
@@ -35,9 +39,9 @@ Trades use whole satoshis. For a fixed fiat amount, BTC is rounded **up when you
 
 The browser requests BTC-to-fiat rates from [CoinGecko](https://api.coingecko.com/api/v3/exchange_rates), [BitPay](https://bitpay.com/rates/BTC), and [Blockchain.info](https://blockchain.info/ticker). Each provider reports fiat units per BTC. VexlCalc averages the *inverse* (BTC per fiat unit) from the providers that return a valid rate for a given currency, then converts that average back to fiat per BTC. Unavailable providers and invalid rates are skipped. Browser access to a provider depends on its availability and CORS policy.
 
-The app shows the age of its last downloaded rates and lets you refresh them. Its service worker caches the app files for offline opening after a successful visit; the last downloaded rates are kept in browser storage. Offline results can be stale. On a first visit without a connection or a saved rate, conversions that need a rate are unavailable.
+The app shows the age of its last downloaded rates and lets you refresh them. Its service worker caches the app files for offline opening after a successful visit; the last downloaded rates are kept in browser storage. Offline results can be stale. On a first visit without a connection or a saved rate, conversions that need a rate are unavailable. TradingView embeds are fetched from TradingView and are not part of the offline app cache.
 
-Settings and cached rates live in your browser's `localStorage` under `priceconverter:v1` (the existing key is retained for compatibility). Saved settings include selected currencies **and their order**, display unit, language, current screen, one trade percentage, and conversion choices. An existing pair of buy/sell percentages is migrated using the direction last selected. Entered trade amounts, individual trades, and a manually entered reference price are not saved. The app has no account or server-side trade history; fetching rates sends requests to the named third-party providers.
+Settings and cached rates live in your browser's `localStorage` under `priceconverter:v1` (the existing key is retained for compatibility). Saved settings include selected currencies **and their order**, display unit, language, current screen, one trade percentage, and conversion choices. An existing pair of buy/sell percentages is migrated using the direction last selected. Entered trade amounts, exchange counter quotes and fees, individual trades, and a manually entered reference price are not saved. The app has no account or server-side trade history; fetching rates sends requests to the named third-party providers. Opening the converter while online also connects to TradingView for the chart.
 
 The interface supports **English and Czech**. **Auto** follows the device language; a manual choice is remembered.
 
@@ -77,7 +81,7 @@ The side menu links to this [open-source repository](https://github.com/agp-l/Pr
 | --- | --- |
 | `index.html`, `style.css` | App structure and mobile-first styling |
 | `app.js` | `ConverterApp` UI, state, persistence, and install flow |
-| `rates.js`, `quotes.js` | Rate fetching and conversion/trade calculations |
+| `rates.js`, `quotes.js` | Rate fetching and conversion, exchange comparison, and trade calculations |
 | `currencies.js`, `i18n.js` | Currency catalog and interface translations |
 | `manifest.json`, `sw.js`, `icon*` | PWA metadata, offline app shell, and icons |
 | `tests/` | Browser-run tests; no Node.js required |
