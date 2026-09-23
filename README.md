@@ -1,6 +1,6 @@
 # VexlCalc
 
-A pocket-sized Bitcoin trade calculator and travel currency converter. [Open the app](https://convertor.dobrodruzi.cz/).
+A pocket-sized Bitcoin trade calculator and travel currency converter. [Open the app](https://vexlcalc.dobrodruzi.cz/).
 
 VexlCalc is a standalone progressive web app built with HTML, CSS, and vanilla JavaScript. It runs in the browser with no account, Node.js, framework, build step, or backend. You can add it to your phone's home screen. The compact mobile layout and side menu work on phones and desktop screens. Use the menu to open **Converter**, **Personal trades**, **Currency to currency**, **BTC chart**, or **Settings**; you can also install the app and change the language there.
 
