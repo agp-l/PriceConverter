@@ -33,6 +33,8 @@ Enter **one percentage** for both directions (2% by default). VexlCalc applies i
 
 Choose a fiat currency, enter either a fixed fiat amount or a BTC/SATS amount, and see the amounts exchanged, your price per BTC, and the difference from the reference price. You can use the last downloaded rate or enter your own reference price, including for a currency such as PYG when no automatic rate is available. The manual price lasts only for the current app session and is reset when you change the trade currency.
 
+Use **Share offer** to send the current quote through your device's share menu, or **Copy** to paste it into a conversation. The message states whether you buy or sell BTC, the exact satoshi amount, fiat amount, your offered price per BTC, and the time it was calculated. When using a downloaded reference rate, it also includes when that rate was fetched. It does not disclose your percentage margin or the difference from the reference rate. Share is shown when supported by the browser; Copy works where clipboard access is available and otherwise opens a selectable text box. An invalid quote cannot be shared.
+
 Trades use whole satoshis. For a fixed fiat amount, BTC is rounded **up when you buy** and **down when you sell**. The displayed difference is an arithmetic comparison with the reference price, **not guaranteed earnings or net profit**; network fees, taxes, and other costs are not included.
 
 ## Rates, storage, and offline use

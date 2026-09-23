@@ -1,7 +1,7 @@
 import {detectLanguage, resolveLanguage, t} from '../i18n.js';
 import {getCurrencies} from '../currencies.js';
 import {averageRates, parseAmount, btcFrom, fromBtc, fetchRates} from '../rates.js';
-import {restoreSettings, ConverterApp} from '../app.js';
+import {restoreSettings, ConverterApp, formatTradeOffer} from '../app.js';
 import {parsePercent, tradeQuote, travelQuote, compareTravelOffer} from '../quotes.js';
 
 const results = document.querySelector('#results');
@@ -94,6 +94,40 @@ await check('Pevná fiat částka a zaokrouhlení na celé satoshi', () => {
   assert(buy.sats === 510205 && sell.sats === 490196, 'Zaokrouhlení podle směru');
   assert(tradeQuote({marketRate:2_000_000, marginPercent:100, side:'buy', amount:100}) === null, 'Neplatná cena');
   assert(tradeQuote({marketRate:2_000_000, marginPercent:0, side:'sell', amount:1.5, amountKind:'bitcoin', unit:'SATS'}) === null, 'Zlomek satoshi');
+});
+
+await check('Sdílená nabídka uvádí směr, přesné satoshi a stáří podkladového kurzu', () => {
+  const date = new Date('2026-09-23T12:00:00Z');
+  const buy = tradeQuote({marketRate:2_000_000, marginPercent:2, side:'buy', amount:10_000});
+  const text = formatTradeOffer(buy, {currency:'CZK', generatedAt:date, referenceUpdatedAt:date.valueOf()});
+  assert(/Koupím od vás 0\.00510205 BTC za 10\s?000 CZK\./.test(text) &&
+    /1\s?960\s?000 CZK/.test(text), 'Nabídka nákupu');
+  assert(text.includes('Podkladový kurz načten:') && !text.includes('2 %'), 'Stáří bez zveřejnění marže');
+  const sell = tradeQuote({marketRate:2_000_000, marginPercent:2, side:'sell', amount:0.005, amountKind:'bitcoin'});
+  const english = formatTradeOffer(sell, {currency:'CZK', unit:'SATS', language:'en', generatedAt:date});
+  assert(english.includes('I will sell you 500,000 sats (0.00500000 BTC) for 10,200 CZK.'), 'Nabídka prodeje v sats');
+  assert(!english.includes('Reference rate fetched:'), 'Ruční podklad nepředstírá stažení kurzu');
+});
+
+await check('Sdílení, kopírování i ruční zkopírování při nedostupné schránce', async () => {
+  let shared; let copied;
+  const offer = 'Nabídka\nKoupím BTC.';
+  const textarea = {value:'', focus() { this.focused = true; }, select() { this.selected = true; }};
+  const dialog = {showModal() { this.open = true; }};
+  const app = {win:{navigator:{share:async data => { shared = data; }, clipboard:{writeText:async value => { copied = value; }}}},
+    elements:{tradeShareStatus:{textContent:''},tradeCopyText:textarea,tradeCopyDialog:dialog},
+    tradeOfferText:() => offer, tr:key => t('en', key)};
+  await ConverterApp.prototype.shareTradeOffer.call(app);
+  assert(shared.text === offer && shared.title.includes('VexlCalc'), 'Nativní sdílení');
+  await ConverterApp.prototype.copyTradeOffer.call(app);
+  assert(copied === offer && app.elements.tradeShareStatus.textContent === 'Copied.', 'Schránka');
+  app.win.navigator.clipboard = undefined;
+  await ConverterApp.prototype.copyTradeOffer.call(app);
+  assert(dialog.open && textarea.value === offer && textarea.focused && textarea.selected, 'Ruční záloha');
+  app.win.navigator.share = async () => { throw {name:'AbortError'}; };
+  app.elements.tradeShareStatus.textContent = '';
+  await ConverterApp.prototype.shareTradeOffer.call(app);
+  assert(app.elements.tradeShareStatus.textContent === '', 'Zrušení systémového sdílení není chyba');
 });
 
 await check('Cestovní přepočet mezi fiat měnami', () => {
@@ -242,6 +276,7 @@ await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
     reference.value = '2000000'; reference.dispatchEvent(new Event('input', {bubbles:true}));
     assert(doc.querySelector('#offer-price').textContent.includes('1,960,000'), 'Ruční kurz a nákupní odchylka');
     assert(doc.querySelector('#offer-btc').textContent.includes('0.00510205'), 'Nabídka v celých satoshi');
+    assert(!doc.querySelector('#trade-copy').disabled, 'Platnou nabídku lze zkopírovat');
     assert(!Object.hasOwn(JSON.parse(localStorage.getItem(key)), 'manualMarket'), 'Ruční kurz se neukládá');
     doc.querySelector('#dealer-sell').click();
     assert(doc.querySelector('#offer-fiat-label').textContent.includes('receive'), 'Směr prodeje BTC');
@@ -250,6 +285,8 @@ await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
     margin.value = '-2'; margin.dispatchEvent(new Event('input', {bubbles:true}));
     assert(doc.querySelector('#offer-price').textContent.includes('1,960,000') && doc.querySelector('#margin-preview').classList.contains('unfavorable'), 'Záporná výhoda');
     assert(JSON.parse(localStorage.getItem(key)).marginPercent === -2, 'Uložení jediného procenta');
+    margin.value = 'nesmysl'; margin.dispatchEvent(new Event('input', {bubbles:true}));
+    assert(doc.querySelector('#trade-copy').disabled, 'Neplatnou nabídku nelze sdílet');
     margin.value = '2'; margin.dispatchEvent(new Event('input', {bubbles:true}));
     doc.querySelector('#language-switch').value = 'cs';
     doc.querySelector('#language-switch').dispatchEvent(new Event('change', {bubbles:true}));
