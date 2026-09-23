@@ -14,9 +14,9 @@ Pro lokální spuštění například:
 python3 -m http.server 8000
 ```
 
-Potom otevřete `http://localhost:8000`. Na telefonu aplikaci hostujte přes HTTPS (např. GitHub Pages z kořene větve `main`). V aplikaci je tlačítko **Nainstalovat aplikaci**: v prohlížeči s dostupnou instalační výzvou ji otevře, jinde zobrazí postup pro konkrétní zařízení. Na iPhonu se instalace sama nenabízí: v Safari zvolte **Sdílet → Přidat na plochu**. Na Androidu lze také použít nabídku prohlížeče **Instalovat aplikaci** / **Přidat na plochu**. Otevření souboru na GitHubu či pomocí `file://` instalaci PWA nenabízí; je nutná adresa skutečně zveřejněné aplikace. Manifest, service worker a ikony umožňují samostatné spuštění bez lišty prohlížeče. Po první návštěvě funguje prostředí offline; převody fungují s naposledy uloženými kurzy. Při první návštěvě bez připojení nejsou k dispozici žádné směnné kurzy.
+Potom otevřete `http://localhost:8000`. Zveřejněná aplikace běží na `https://convertor.dobrodruzi.cz/`. V aplikaci je tlačítko **Nainstalovat aplikaci**: v prohlížeči s dostupnou instalační výzvou ji otevře, jinde zobrazí postup pro konkrétní zařízení. Na iPhonu se instalace sama nenabízí: v Safari zvolte **Sdílet → Přidat na plochu**. Na Androidu lze také použít nabídku prohlížeče **Instalovat aplikaci** / **Přidat na plochu**. Otevření souboru na GitHubu či pomocí `file://` instalaci PWA nenabízí; je nutná adresa skutečně zveřejněné aplikace. Manifest, service worker a ikony umožňují samostatné spuštění bez lišty prohlížeče. Po první návštěvě funguje prostředí offline; převody fungují s naposledy uloženými kurzy. Při první návštěvě bez připojení nejsou k dispozici žádné směnné kurzy.
 
-Pokud se GitHub Pages ještě nezobrazují, v nastavení repozitáře zapněte **Settings → Pages → Deploy from a branch → main → /(root) → Save**. Aplikace pak bude na `https://agp-l.github.io/PriceConverter/`; publikování může několik minut trvat.
+Při nasazení nahrajte také `manifest.json`, `sw.js` a soubory `icon.svg`, `icon-192.png` a `icon-512.png` do kořene webu. Pouhé nahrání HTML a JS nestačí: chybějící ikony znemožní instalaci a přeruší přednačtení pro offline režim. Původní složka `icons/` a `manifest.webmanifest` zůstávají v repozitáři kvůli starším instalacím.
 
 ## Zdroje kurzů
 
