@@ -559,6 +559,11 @@ body {
 }
 .donate-hint { margin:0;color:#706280;font-size:11px;line-height:1.45 }
 .copy-status { min-height:17px;margin:12px 0 0;color:#5b3286;font-size:12px }
+.trade-copy-dialog textarea {
+  display:block;width:100%;min-height:135px;margin-top:8px;padding:10px;
+  border:1px solid #e2d3ee;border-radius:6px;background:#fff;color:#392065;
+  font:inherit;font-size:13px;line-height:1.5;resize:vertical
+}
 
 .dialog-header {
   display:flex;
@@ -788,6 +793,15 @@ body {
 .offer-primary + .offer-detail { padding-top:9px;border-top:1px solid #ffffff33 }
 .offer-detail span:first-child { color:#d9c3e9 }
 .offer-detail span:last-child { text-align:right;font-weight:750 }
+.trade-actions { display:flex;gap:8px;margin-top:13px;padding-top:12px;border-top:1px solid #ffffff33 }
+.trade-actions button {
+  flex:1;min-height:40px;padding:7px 9px;border:1px solid #bc8fe7;border-radius:6px;
+  background:#f3e8ff;color:#392065;font:inherit;font-size:12px;font-weight:750;cursor:pointer
+}
+.trade-actions button:last-child { background:transparent;color:#fff }
+.trade-actions button:disabled { opacity:.5;cursor:default }
+.trade-share-status { margin:5px 2px 0;color:#5b3286;font-size:11px }
+.trade-share-status:empty { display:none }
 .trade-validation { min-height:0;margin:6px 2px 0;color:#a44d36;font-size:11px;line-height:1.4 }
 .trade-validation:empty { display:none }
 .trade-note { margin:4px 2px 0 }

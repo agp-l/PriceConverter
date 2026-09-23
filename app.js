@@ -12,6 +12,26 @@ const searchable = value => value.toLocaleLowerCase('cs').normalize('NFD').repla
 const savedPercent = (value, fallback) => typeof value === 'number' && Number.isFinite(value) && value > -100 && value < 100 ? value : fallback;
 const savedCurrency = (value, fallback) => CURRENCY_CODES.has(value) ? value : fallback;
 
+// A quote is written from the owner's perspective, addressed to the other party.
+// Do not expose the owner's margin or market comparison in the shared offer.
+export function formatTradeOffer(quote, {currency, unit = 'BTC', language = 'cs',
+  generatedAt = new Date(), referenceUpdatedAt = null} = {}) {
+  const locale = language === 'cs' ? 'cs-CZ' : 'en-US';
+  const number = new Intl.NumberFormat(locale, {maximumFractionDigits:8});
+  const btc = unit === 'SATS'
+    ? `${number.format(quote.sats)} sats (${quote.btc.toFixed(8)} BTC)`
+    : `${quote.btc.toFixed(8)} BTC`;
+  const fiat = `${number.format(quote.fiat)} ${currency}`;
+  const price = `${number.format(quote.offeredRate)} ${currency}`;
+  const lines = [t(language, 'shareTradeTitle'),
+    t(language, quote.side === 'buy' ? 'shareTradeBuy' : 'shareTradeSell', {btc, fiat}),
+    t(language, 'shareTradePrice', {price}),
+    t(language, 'shareTradeDate', {date:generatedAt.toLocaleString(locale)})];
+  if (referenceUpdatedAt) lines.push(t(language, 'shareTradeRateDate',
+    {date:new Date(referenceUpdatedAt).toLocaleString(locale)}));
+  return lines.join('\n');
+}
+
 // Keep one storage format across releases. Discard malformed fields individually.
 export function restoreSettings(json) {
   let saved;
@@ -78,6 +98,8 @@ export class ConverterApp {
       largeChartFallback:'large-chart-fallback',
       dealerBuy:'dealer-buy', dealerSell:'dealer-sell',
       dealerCurrency:'dealer-currency', marginPercent:'margin-percent', marginPreview:'margin-preview',
+      tradeShare:'trade-share', tradeCopy:'trade-copy', tradeShareStatus:'trade-share-status',
+      tradeCopyDialog:'trade-copy-dialog', tradeCopyText:'trade-copy-text', tradeCopyClose:'trade-copy-close',
       marketSource:'market-source', marketTools:'market-tools', manualMarketWrap:'manual-market-wrap',
       manualMarket:'manual-market', marketSourceHint:'market-source-hint',
       dealerKind:'dealer-amount-kind', dealerUnit:'dealer-unit', dealerAmount:'dealer-amount',
@@ -466,6 +488,9 @@ export class ConverterApp {
     const marketRate = manual ? parseAmount(elements.manualMarket.value, state.language) : state.cache?.rates?.[state.tradeCurrency];
     const quote = amount === null || marginPercent === null ? null : tradeQuote({marketRate, marginPercent,
       side:state.dealerSide, amount, amountKind:state.dealerKind, unit:state.unit});
+    this.currentTradeQuote = quote;
+    elements.tradeShare.disabled = elements.tradeCopy.disabled = !quote || quote.sats === 0 || quote.fiat === 0;
+    elements.tradeShareStatus.textContent = '';
     const fiat = number => `${this.format(number, state.tradeCurrency)} ${state.tradeCurrency}`;
     elements.offerFiat.textContent = quote ? fiat(quote.fiat) : '—';
     elements.offerBtc.textContent = quote ? state.unit === 'SATS'
@@ -609,6 +634,37 @@ export class ConverterApp {
     }
   }
 
+  tradeOfferText() {
+    if (!this.currentTradeQuote) return '';
+    return formatTradeOffer(this.currentTradeQuote, {currency:this.state.tradeCurrency,
+      unit:this.state.unit, language:this.state.language,
+      referenceUpdatedAt:this.marketSource === 'live' ? this.state.cache?.updatedAt : null});
+  }
+
+  async shareTradeOffer() {
+    const offer = this.tradeOfferText();
+    if (!offer) return;
+    try {
+      await this.win.navigator.share({title:this.tr('shareTradeTitle'), text:offer});
+    } catch (error) {
+      if (error?.name !== 'AbortError') this.elements.tradeShareStatus.textContent = this.tr('shareTradeFailed');
+    }
+  }
+
+  async copyTradeOffer() {
+    const offer = this.tradeOfferText();
+    if (!offer) return;
+    try {
+      await this.win.navigator.clipboard.writeText(offer);
+      this.elements.tradeShareStatus.textContent = this.tr('copied');
+    } catch {
+      this.elements.tradeCopyText.value = offer;
+      this.elements.tradeCopyDialog.showModal();
+      this.elements.tradeCopyText.focus();
+      this.elements.tradeCopyText.select();
+    }
+  }
+
   async refresh() {
     const {state, elements} = this;
     if (state.busy) return;
@@ -722,6 +778,13 @@ export class ConverterApp {
     });
     elements.dealerKind.addEventListener('change', () => this.changeDealerKind(elements.dealerKind.value));
     elements.dealerUnit.addEventListener('change', () => this.setUnit(elements.dealerUnit.value));
+    elements.tradeShare.hidden = typeof win.navigator.share !== 'function';
+    elements.tradeShare.addEventListener('click', () => this.shareTradeOffer());
+    elements.tradeCopy.addEventListener('click', () => this.copyTradeOffer());
+    elements.tradeCopyClose.addEventListener('click', () => elements.tradeCopyDialog.close());
+    elements.tradeCopyDialog.addEventListener('click', event => {
+      if (event.target === elements.tradeCopyDialog) elements.tradeCopyDialog.close();
+    });
     elements.install.addEventListener('click', () => {
       elements.menu.close();
       this.promptInstall();
