@@ -53,7 +53,7 @@ export class ConverterApp {
     this.elements = Object.fromEntries(Object.entries({
       btc:'btc-input', unit:'btc-unit', btcButton:'unit-btc', satsButton:'unit-sats',
       list:'currency-list', count:'currency-count', sort:'sort-currencies', sortHint:'sort-hint',
-      status:'status-text', dot:'status-dot', refresh:'refresh',
+      status:'status-text', dot:'status-dot', refresh:'refresh', ratesStatus:'rates-status',
       language:'language-switch', add:'add-currency', dialog:'currency-dialog', close:'close-dialog',
       search:'currency-search', options:'currency-options', install:'install-button',
       menu:'app-menu', menuToggle:'menu-toggle', menuClose:'menu-close', screenTitle:'screen-title',
@@ -62,7 +62,9 @@ export class ConverterApp {
       copyLightning:'copy-lightning', copyStatus:'copy-status',
       installDialog:'install-dialog', installClose:'close-install', installInstructions:'install-instructions',
       tabConvert:'tab-convert', tabTravel:'tab-travel', tabTrade:'tab-trade',
+      tabChart:'tab-chart', tabSettings:'tab-settings',
       paneConvert:'convert-pane', paneTravel:'travel-pane', paneTrade:'trade-pane',
+      paneChart:'chart-pane', paneSettings:'settings-pane',
       travelAmount:'travel-amount', travelFrom:'travel-from', travelTo:'travel-to', travelSwap:'travel-swap',
       travelValue:'travel-value', travelRate:'travel-rate',
       travelOfferBasis:'travel-offer-basis', travelOfferRate:'travel-offer-rate', travelFee:'travel-fee',
@@ -70,8 +72,9 @@ export class ConverterApp {
       travelComparison:'travel-comparison', travelOfferValue:'travel-offer-value',
       travelDifference:'travel-difference', travelPercent:'travel-percent',
       travelSourceEquivalent:'travel-source-equivalent', travelOfferError:'travel-offer-error',
-      miniChart:'mini-chart', miniChartFallback:'mini-chart-fallback', openChart:'open-chart',
-      chartDialog:'chart-dialog', chartClose:'close-chart', largeChart:'large-chart',
+      chartPreview:'chart-preview', chartPeriod:'chart-period', chartVisibility:'show-chart-preview',
+      chartRange:'chart-range', miniChart:'mini-chart', miniChartFallback:'mini-chart-fallback', openChart:'open-chart',
+      largeChart:'large-chart',
       largeChartFallback:'large-chart-fallback',
       dealerBuy:'dealer-buy', dealerSell:'dealer-sell',
       dealerCurrency:'dealer-currency', marginPercent:'margin-percent', marginPreview:'margin-preview',
@@ -97,6 +100,8 @@ export class ConverterApp {
     this.marketSource = 'live';
     this.miniChartLoaded = false;
     this.largeChartLoaded = false;
+    this.miniChartRange = null;
+    this.largeChartRange = null;
   }
 
   tr(key, parameters) { return t(this.state.language, key, parameters); }
@@ -267,18 +272,50 @@ export class ConverterApp {
     }
   }
 
+  syncChartSettings() {
+    const {state, elements} = this;
+    elements.chartVisibility.checked = state.showChartPreview;
+    elements.chartRange.value = state.chartRange;
+    elements.chartPeriod.textContent = this.tr('chartPeriod',
+      {period:this.tr({ '1M':'chartMonth', '3M':'chartQuarter', '12M':'chartYear' }[state.chartRange])});
+    elements.chartPreview.hidden = !state.showChartPreview;
+    if (!state.showChartPreview && this.miniChartLoaded) {
+      this.resetChart(elements.miniChart);
+      this.miniChartLoaded = false;
+      this.miniChartRange = null;
+    }
+  }
+
+  resetChart(container) {
+    const widget = this.doc.createElement('div');
+    widget.className = 'tradingview-widget-container__widget';
+    container.replaceChildren(widget);
+  }
+
   setMode(mode) {
-    this.state.mode = ['convert', 'travel', 'trade'].includes(mode) ? mode : 'convert';
+    this.state.mode = ['convert', 'travel', 'trade', 'chart', 'settings'].includes(mode) ? mode : 'convert';
     for (const [name, pane, button, title] of [
       ['convert', this.elements.paneConvert, this.elements.tabConvert, 'converterTab'],
       ['travel', this.elements.paneTravel, this.elements.tabTravel, 'travelHeading'],
-      ['trade', this.elements.paneTrade, this.elements.tabTrade, 'tradeTab']
+      ['trade', this.elements.paneTrade, this.elements.tabTrade, 'tradeTab'],
+      ['chart', this.elements.paneChart, this.elements.tabChart, 'chartTab'],
+      ['settings', this.elements.paneSettings, this.elements.tabSettings, 'settingsTab']
     ]) {
       const selected = this.state.mode === name;
       pane.hidden = !selected;
       if (selected) button.setAttribute('aria-current', 'page');
       else button.removeAttribute('aria-current');
       if (selected) this.elements.screenTitle.textContent = this.tr(title);
+    }
+    this.elements.ratesStatus.hidden = ['chart', 'settings'].includes(this.state.mode);
+    this.elements.refresh.hidden = this.elements.ratesStatus.hidden;
+    if (this.state.mode !== 'chart' && this.largeChartLoaded) {
+      this.resetChart(this.elements.largeChart);
+      this.largeChartLoaded = false;
+    }
+    if (this.doc.readyState === 'complete') {
+      if (this.state.mode === 'convert') this.loadMiniChart();
+      if (this.state.mode === 'chart') this.loadLargeChart();
     }
     this.save();
   }
@@ -340,7 +377,9 @@ export class ConverterApp {
     script.async = true;
     script.textContent = JSON.stringify(config);
     script.addEventListener('error', () => {
-      container.hidden = true; fallback.hidden = false; script.remove();
+      if (!script.isConnected) return;
+      this.resetChart(container);
+      container.hidden = true; fallback.hidden = false;
       if (container === this.elements.miniChart) this.miniChartLoaded = false;
       else this.largeChartLoaded = false;
     }, {once:true});
@@ -350,6 +389,11 @@ export class ConverterApp {
 
   loadMiniChart() {
     const {miniChart, miniChartFallback} = this.elements;
+    if (!this.state.showChartPreview || this.state.mode !== 'convert') return;
+    if (this.miniChartLoaded && this.miniChartRange !== this.state.chartRange) {
+      this.resetChart(miniChart);
+      this.miniChartLoaded = false;
+    }
     if (this.miniChartLoaded) {
       miniChart.hidden = !this.win.navigator.onLine;
       miniChartFallback.hidden = this.win.navigator.onLine;
@@ -358,15 +402,20 @@ export class ConverterApp {
     this.miniChartLoaded = this.embedChart(miniChart, miniChartFallback,
       'embed-widget-mini-symbol-overview.js', {
         symbol:'BITSTAMP:BTCUSD', width:'100%', height:'100%', locale:'en',
-        dateRange:'12M', colorTheme:'light', chartOnly:true, noTimeScale:true,
+        dateRange:this.state.chartRange, colorTheme:'light', chartOnly:true, noTimeScale:true,
         isTransparent:true, autosize:true, trendLineColor:'rgba(110, 52, 168, 1)',
         underLineColor:'rgba(157, 103, 205, 0.22)', underLineBottomColor:'rgba(157, 103, 205, 0)'
       });
+    if (this.miniChartLoaded) this.miniChartRange = this.state.chartRange;
   }
 
-  openLargeChart() {
-    const {chartDialog, largeChart, largeChartFallback} = this.elements;
-    if (!chartDialog.open) chartDialog.showModal();
+  loadLargeChart() {
+    const {largeChart, largeChartFallback} = this.elements;
+    if (this.state.mode !== 'chart') return;
+    if (this.largeChartLoaded && this.largeChartRange !== this.state.chartRange) {
+      this.resetChart(largeChart);
+      this.largeChartLoaded = false;
+    }
     if (this.largeChartLoaded) {
       largeChart.hidden = !this.win.navigator.onLine;
       largeChartFallback.hidden = this.win.navigator.onLine;
@@ -374,12 +423,14 @@ export class ConverterApp {
     }
     this.largeChartLoaded = this.embedChart(largeChart, largeChartFallback,
       'embed-widget-advanced-chart.js', {
-        autosize:true, symbol:'BITSTAMP:BTCUSD', interval:'W', range:'12M',
+        autosize:true, symbol:'BITSTAMP:BTCUSD', interval:this.state.chartRange === '12M' ? 'W' : 'D',
+        range:this.state.chartRange,
         timezone:'Etc/UTC', theme:'light', style:'1', locale:'en',
         backgroundColor:'#faf8ff', gridColor:'rgba(57, 32, 101, 0.08)',
         hide_side_toolbar:true, allow_symbol_change:false, withdateranges:true,
         save_image:false
       });
+    if (this.largeChartLoaded) this.largeChartRange = this.state.chartRange;
   }
 
   renderTrade() {
@@ -515,7 +566,8 @@ export class ConverterApp {
     elements.dealerUnit.value = state.unit;
     elements.dealerKind.value = state.dealerKind;
     if (state.anchor === 'BTC') elements.btc.value = state.raw;
-    this.renderRows(); this.renderOptions(); this.renderTravel(); this.renderTrade(); this.setMode(state.mode); this.showStatus();
+    this.renderRows(); this.renderOptions(); this.renderTravel(); this.renderTrade();
+    this.syncChartSettings(); this.setMode(state.mode); this.showStatus();
   }
 
   updateInstallInstructions() {
@@ -598,7 +650,8 @@ export class ConverterApp {
     elements.close.addEventListener('click', () => elements.dialog.close());
     elements.dialog.addEventListener('click', event => { if (event.target === elements.dialog) elements.dialog.close(); });
     elements.search.addEventListener('input', () => this.renderOptions());
-    for (const [button, mode] of [[elements.tabConvert, 'convert'], [elements.tabTravel, 'travel'], [elements.tabTrade, 'trade']]) {
+    for (const [button, mode] of [[elements.tabConvert, 'convert'], [elements.tabTravel, 'travel'],
+      [elements.tabTrade, 'trade'], [elements.tabChart, 'chart'], [elements.tabSettings, 'settings']]) {
       button.addEventListener('click', () => {
         this.setMode(mode);
         if (elements.menu.open) elements.menu.close();
@@ -618,10 +671,20 @@ export class ConverterApp {
     elements.travelOfferBasis.addEventListener('change', () => { elements.travelOfferRate.value = ''; this.renderTravel(); });
     elements.travelOfferRate.addEventListener('input', () => this.renderTravel());
     elements.travelFee.addEventListener('input', () => this.renderTravel());
-    elements.openChart.addEventListener('click', () => this.openLargeChart());
-    elements.chartClose.addEventListener('click', () => elements.chartDialog.close());
-    elements.chartDialog.addEventListener('click', event => {
-      if (event.target === elements.chartDialog) elements.chartDialog.close();
+    elements.openChart.addEventListener('click', () => {
+      this.setMode('chart');
+      elements.menuToggle.focus();
+    });
+    elements.chartVisibility.addEventListener('change', () => {
+      this.state.showChartPreview = elements.chartVisibility.checked;
+      this.syncChartSettings(); this.save();
+    });
+    elements.chartRange.addEventListener('change', () => {
+      if (!CHART_RANGES.includes(elements.chartRange.value)) return;
+      this.state.chartRange = elements.chartRange.value;
+      if (this.miniChartLoaded) { this.resetChart(elements.miniChart); this.miniChartLoaded = false; }
+      if (this.largeChartLoaded) { this.resetChart(elements.largeChart); this.largeChartLoaded = false; }
+      this.syncChartSettings(); this.save();
     });
     for (const [button, side] of [[elements.dealerBuy, 'buy'], [elements.dealerSell, 'sell']]) {
       button.addEventListener('click', () => { this.state.dealerSide = side; this.save(); this.renderTrade(); });
@@ -674,14 +737,22 @@ export class ConverterApp {
     win.addEventListener('appinstalled', () => { this.installPrompt = null; elements.install.hidden = true; });
     win.matchMedia('(display-mode: standalone)').addEventListener?.('change', () => this.updateInstallButton());
     win.addEventListener('online', () => {
+      // A chart iframe hidden during an outage may not reconnect on its own.
+      if (this.miniChartLoaded && elements.miniChart.hidden) {
+        this.resetChart(elements.miniChart); this.miniChartLoaded = false;
+      }
+      if (this.largeChartLoaded && elements.largeChart.hidden) {
+        this.resetChart(elements.largeChart); this.largeChartLoaded = false;
+      }
       this.showStatus(); this.refresh(); this.loadMiniChart();
-      if (elements.chartDialog.open) this.openLargeChart();
+      this.loadLargeChart();
     });
-    win.addEventListener('offline', () => { this.showStatus(); this.loadMiniChart(); });
+    win.addEventListener('offline', () => { this.showStatus(); this.loadMiniChart(); this.loadLargeChart(); });
     win.setInterval(() => this.showStatus(), 60_000);
     this.applyLanguage(); this.updateInstallButton(); this.refresh();
-    if (this.doc.readyState === 'complete') win.setTimeout(() => this.loadMiniChart(), 0);
-    else win.addEventListener('load', () => this.loadMiniChart(), {once:true});
+    const loadVisibleChart = () => { this.loadMiniChart(); this.loadLargeChart(); };
+    if (this.doc.readyState === 'complete') win.setTimeout(loadVisibleChart, 0);
+    else win.addEventListener('load', loadVisibleChart, {once:true});
     if ('serviceWorker' in win.navigator && win.isSecureContext) win.navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
 }

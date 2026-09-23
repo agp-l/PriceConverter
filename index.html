@@ -25,7 +25,7 @@
         </button>
       </header>
 
-      <div class="status-line" role="status" aria-live="polite"><span class="status-dot" id="status-dot"></span><span id="status-text" data-i18n="loading">Načítám kurzy…</span></div>
+      <div class="status-line" id="rates-status" role="status" aria-live="polite"><span class="status-dot" id="status-dot"></span><span id="status-text" data-i18n="loading">Načítám kurzy…</span></div>
 
       <div id="convert-pane" class="screen-pane" role="region" aria-labelledby="screen-title">
       <section class="bitcoin-card" aria-labelledby="bitcoin-label">
@@ -34,8 +34,8 @@
         <div class="card-bottom"><div class="unit-switch" role="group" aria-label="Jednotka bitcoinu" data-i18n-aria-label="bitcoinUnit"><button type="button" id="unit-btc" class="selected" aria-pressed="true">BTC</button><button type="button" id="unit-sats" aria-pressed="false">SATS</button></div></div>
       </section>
 
-      <section class="chart-preview" aria-label="Graf bitcoinu" data-i18n-aria-label="chartTitle">
-        <div class="chart-preview-top"><span data-i18n="chartPeriod">BTC/USD · 1 rok</span><button id="open-chart" type="button" data-i18n="openChart">Otevřít graf ↗</button></div>
+      <section class="chart-preview" id="chart-preview" aria-label="Graf bitcoinu" data-i18n-aria-label="chartTitle">
+        <div class="chart-preview-top"><span id="chart-period">BTC/USD · 1 rok</span><button id="open-chart" type="button" data-i18n="openChart">Celý graf ›</button></div>
         <div id="mini-chart" class="chart-embed tradingview-widget-container"><div class="tradingview-widget-container__widget"></div></div>
         <p id="mini-chart-fallback" class="chart-fallback" data-i18n="chartOffline" hidden>Graf je dostupný online.</p>
         <a class="chart-credit" href="https://www.tradingview.com/symbols/BTCUSD/?exchange=BITSTAMP" target="_blank" rel="noopener nofollow noreferrer">TradingView · BITSTAMP:BTCUSD</a>
@@ -80,6 +80,19 @@
         <p id="trade-validation" class="trade-validation" role="status" aria-live="polite"></p>
         <p class="helper-text trade-note" data-i18n="tradeNotice">Poplatky nejsou zahrnuty; BTC se zaokrouhluje na celé satoshi.</p>
       </div>
+
+      <div id="chart-pane" class="screen-pane chart-pane" role="region" aria-labelledby="screen-title" hidden>
+        <div id="large-chart" class="large-chart tradingview-widget-container"><div class="tradingview-widget-container__widget"></div></div>
+        <p id="large-chart-fallback" class="chart-fallback" data-i18n="chartOffline" hidden>Graf vyžaduje internet.</p>
+        <a class="chart-credit" href="https://www.tradingview.com/symbols/BTCUSD/?exchange=BITSTAMP" target="_blank" rel="noopener nofollow noreferrer" data-i18n="chartOnTradingView">Otevřít na TradingView ↗</a>
+      </div>
+
+      <div id="settings-pane" class="screen-pane" role="region" aria-labelledby="screen-title" hidden>
+        <section class="settings-card" aria-label="Nastavení grafu" data-i18n-aria-label="chartSettings">
+          <label class="preview-setting" for="show-chart-preview"><span data-i18n="showChartPreview">Zobrazit malý graf v Převodníku</span><input id="show-chart-preview" type="checkbox" checked></label>
+          <label class="field-label" for="chart-range"><span data-i18n="chartRangeLabel">Období grafu</span><select id="chart-range" class="field-select"><option value="1M" data-i18n="chartMonth">1 měsíc</option><option value="3M" data-i18n="chartQuarter">3 měsíce</option><option value="12M" data-i18n="chartYear">1 rok</option></select></label>
+        </section>
+      </div>
     </main>
     <dialog id="app-menu" class="app-menu" aria-labelledby="menu-title">
       <div class="menu-header"><span class="menu-monogram" aria-hidden="true">₿</span><h2 id="menu-title">VexlCalc</h2><button id="menu-close" class="menu-close" type="button" aria-label="Zavřít nabídku" data-i18n-aria-label="closeMenu">×</button></div>
@@ -87,6 +100,8 @@
         <button type="button" id="tab-convert" data-mode="convert" aria-controls="convert-pane" aria-current="page"><span class="nav-icon" aria-hidden="true">₿</span><span data-i18n="converterTab">Převodník</span><span class="nav-arrow" aria-hidden="true">›</span></button>
         <button type="button" id="tab-travel" data-mode="travel" aria-controls="travel-pane"><span class="nav-icon" aria-hidden="true">↔</span><span data-i18n="travelHeading">Měna za měnu</span><span class="nav-arrow" aria-hidden="true">›</span></button>
         <button type="button" id="tab-trade" data-mode="trade" aria-controls="trade-pane"><span class="nav-icon" aria-hidden="true">%</span><span data-i18n="tradeTab">Osobní směna</span><span class="nav-arrow" aria-hidden="true">›</span></button>
+        <button type="button" id="tab-chart" data-mode="chart" aria-controls="chart-pane"><span class="nav-icon" aria-hidden="true">▥</span><span data-i18n="chartTab">Graf BTC</span><span class="nav-arrow" aria-hidden="true">›</span></button>
+        <button type="button" id="tab-settings" data-mode="settings" aria-controls="settings-pane"><span class="nav-icon" aria-hidden="true">⚙</span><span data-i18n="settingsTab">Nastavení</span><span class="nav-arrow" aria-hidden="true">›</span></button>
       </nav>
       <div class="menu-footer">
         <button type="button" id="install-button" class="menu-action"><span aria-hidden="true">↧</span><span data-i18n="installButton">Nainstalovat aplikaci</span></button>
@@ -99,7 +114,6 @@
 
   <dialog id="currency-dialog" class="currency-dialog" aria-labelledby="dialog-title"><div class="dialog-header"><div><span class="eyebrow" data-i18n="settings">NASTAVENÍ</span><h2 id="dialog-title" data-i18n="addCurrency">Přidat měnu</h2></div><button type="button" id="close-dialog" class="icon-button" aria-label="Zavřít" data-i18n-aria-label="close">×</button></div><label class="search-label" for="currency-search" data-i18n="searchLabel">Hledat podle názvu nebo kódu</label><input id="currency-search" class="search-input" type="search" autocomplete="off" placeholder="Třeba PLN nebo zlotý" data-i18n-placeholder="searchPlaceholder"><div id="currency-options" class="currency-options"></div></dialog>
   <dialog id="install-dialog" class="currency-dialog install-dialog" aria-labelledby="install-title"><div class="dialog-header"><div><span class="eyebrow" data-i18n="installEyebrow">APLIKACE V MOBILU</span><h2 id="install-title" data-i18n="installTitle">Přidat na plochu</h2></div><button type="button" id="close-install" class="icon-button" aria-label="Zavřít" data-i18n-aria-label="close">×</button></div><p data-i18n="installIntro">Otevřete si kalkulačku jedním klepnutím přímo z plochy.</p><p id="install-instructions"></p></dialog>
-  <dialog id="chart-dialog" class="chart-dialog" aria-labelledby="chart-dialog-title"><div class="chart-dialog-header"><h2 id="chart-dialog-title" data-i18n="chartTitle">Graf BTC/USD</h2><button id="close-chart" class="icon-button" type="button" aria-label="Zavřít" data-i18n-aria-label="close">×</button></div><div id="large-chart" class="large-chart tradingview-widget-container"><div class="tradingview-widget-container__widget"></div></div><p id="large-chart-fallback" class="chart-fallback" data-i18n="chartOffline" hidden>Graf je dostupný online.</p><a class="chart-credit" href="https://www.tradingview.com/symbols/BTCUSD/?exchange=BITSTAMP" target="_blank" rel="noopener nofollow noreferrer" data-i18n="chartOnTradingView">Otevřít na TradingView ↗</a></dialog>
   <dialog id="donate-dialog" class="currency-dialog donate-dialog" aria-labelledby="donate-title">
     <div class="dialog-header"><h2 id="donate-title" data-i18n="donate">Podpořit projekt</h2><button type="button" id="close-donate" class="icon-button" aria-label="Zavřít" data-i18n-aria-label="close">×</button></div>
     <div class="donate-method"><label for="donate-btc" data-i18n="donateBitcoin">Bitcoin</label><textarea id="donate-btc" readonly rows="2" spellcheck="false">bc1p8p5quw4s8t2ugspr2lf4mz5hqypw52az4hexp9a4nt80kyjxuayqqde2d7</textarea><div class="donate-actions"><button id="copy-btc" type="button" data-i18n="copyAddress">Kopírovat adresu</button><a id="open-btc-wallet" href="bitcoin:bc1p8p5quw4s8t2ugspr2lf4mz5hqypw52az4hexp9a4nt80kyjxuayqqde2d7" data-i18n="openWallet">Otevřít peněženku</a></div></div>

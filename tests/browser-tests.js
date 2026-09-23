@@ -118,12 +118,21 @@ await check('Srovnání kurzu směnárny v obou zápisech a s poplatkem', () => 
 
 await check('Roční graf BTC načítá správný symbol a interval', () => {
   let captured;
-  const app = {miniChartLoaded:false, state:{language:'cs'}, elements:{miniChart:{},miniChartFallback:{}},
+  const app = {miniChartLoaded:false, state:{language:'cs',mode:'convert',showChartPreview:true,chartRange:'12M'},
+    elements:{miniChart:{},miniChartFallback:{}},
     embedChart:(container,fallback,filename,config) => { captured = {filename,config}; return true; }};
   ConverterApp.prototype.loadMiniChart.call(app);
   assert(app.miniChartLoaded && captured.filename === 'embed-widget-mini-symbol-overview.js', 'Roční widget');
   assert(captured.config.symbol === 'BITSTAMP:BTCUSD' && captured.config.dateRange === '12M'
     && captured.config.chartOnly === true, 'Symbol a rozsah grafu');
+  app.state.showChartPreview = false;
+  ConverterApp.prototype.loadMiniChart.call(app);
+  assert(captured.config.dateRange === '12M', 'Vypnutý náhled nic nenačítá');
+  app.state.showChartPreview = true;
+  app.state.chartRange = '3M';
+  app.resetChart = () => { app.wasReset = true; };
+  ConverterApp.prototype.loadMiniChart.call(app);
+  assert(app.wasReset && captured.config.dateRange === '3M', 'Změna období obnoví widget');
 });
 
 await check('Kopírování darovacích údajů a ruční záloha', async () => {
@@ -234,9 +243,29 @@ await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
     assert(!doc.querySelector('#convert-pane').hidden && doc.querySelector('#travel-pane').hidden, 'Návrat do převodníku');
     assert(doc.querySelector('.chart-preview') && doc.querySelector('.chart-preview').textContent.includes('1 year'), 'Roční náhled grafu');
     doc.querySelector('#open-chart').click();
-    assert(doc.querySelector('#chart-dialog').open, 'Otevření velkého grafu');
-    doc.querySelector('#close-chart').click();
-    assert(!doc.querySelector('#chart-dialog').open, 'Zavření velkého grafu');
+    assert(!doc.querySelector('#chart-pane').hidden && doc.querySelector('#convert-pane').hidden, 'Samostatná obrazovka grafu');
+    assert(doc.querySelector('#refresh').hidden && doc.querySelector('#rates-status').hidden, 'Graf nemá tlačítko aktualizace kurzů');
+    doc.querySelector('#menu-toggle').click();
+    doc.querySelector('#tab-settings').click();
+    assert(!doc.querySelector('#settings-pane').hidden && doc.querySelector('#screen-title').textContent === 'Settings', 'Obrazovka nastavení');
+    const visibility = doc.querySelector('#show-chart-preview');
+    visibility.checked = false; visibility.dispatchEvent(new Event('change', {bubbles:true}));
+    const range = doc.querySelector('#chart-range');
+    range.value = '3M'; range.dispatchEvent(new Event('change', {bubbles:true}));
+    assert(JSON.parse(localStorage.getItem(key)).showChartPreview === false &&
+      JSON.parse(localStorage.getItem(key)).chartRange === '3M', 'Uložení viditelnosti a období');
+    doc.querySelector('#menu-toggle').click();
+    doc.querySelector('#tab-convert').click();
+    assert(doc.querySelector('#chart-preview').hidden && doc.querySelector('#rates-status').hidden === false, 'Převodník bez malého grafu');
+    doc.querySelector('#menu-toggle').click();
+    doc.querySelector('#tab-chart').click();
+    assert(!doc.querySelector('#chart-pane').hidden, 'Velký graf funguje i při vypnutém náhledu');
+    doc.querySelector('#menu-toggle').click();
+    doc.querySelector('#tab-settings').click();
+    visibility.checked = true; visibility.dispatchEvent(new Event('change', {bubbles:true}));
+    doc.querySelector('#menu-toggle').click();
+    doc.querySelector('#tab-convert').click();
+    assert(!doc.querySelector('#chart-preview').hidden && doc.querySelector('#chart-period').textContent.includes('3 months'), 'Znovuzapnutí náhledu a období');
   } finally {
     iframe.remove();
     if (previous === null) localStorage.removeItem(key);
