@@ -15,10 +15,8 @@ const favorites = {
 
 let codes = FALLBACK_CODES;
 try { codes = Intl.supportedValuesOf('currency'); } catch { /* Use the offline catalog. */ }
-let currencyNames;
 let regionNames;
 try {
-  currencyNames = new Intl.DisplayNames('cs', {type:'currency'});
   regionNames = new Intl.DisplayNames('en', {type:'region'});
 } catch { /* Keep currency codes as labels on older browsers. */ }
 
@@ -28,10 +26,17 @@ function flagFor(code) {
   return [...region].map(letter => String.fromCodePoint(127397 + letter.charCodeAt(0))).join('');
 }
 
-export const CURRENCIES = [...new Set([...Object.keys(favorites), ...codes])]
-  .filter(code => /^[A-Z]{3}$/.test(code))
-  .map(code => {
-    const localized = currencyNames?.of(code);
-    const name = favorites[code]?.[0] || (localized && localized !== code ? localized[0].toLocaleUpperCase('cs') + localized.slice(1) : code);
+const catalog = [...new Set([...Object.keys(favorites), ...codes])].filter(code => /^[A-Z]{3}$/.test(code));
+
+export function getCurrencies(language = 'cs') {
+  let names;
+  try { names = new Intl.DisplayNames(language, {type:'currency'}); } catch { /* Use codes as fallback. */ }
+  return catalog.map(code => {
+    const localized = names?.of(code);
+    const name = (language === 'cs' && favorites[code]?.[0]) ||
+      (localized && localized !== code ? localized[0].toLocaleUpperCase(language) + localized.slice(1) : code);
     return {code, name, flag:favorites[code]?.[1] || flagFor(code)};
   });
+}
+
+export const CURRENCIES = getCurrencies('cs');
