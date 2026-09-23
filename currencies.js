@@ -26,7 +26,8 @@ function flagFor(code) {
   return [...region].map(letter => String.fromCodePoint(127397 + letter.charCodeAt(0))).join('');
 }
 
-const catalog = [...new Set([...Object.keys(favorites), ...codes])].filter(code => /^[A-Z]{3}$/.test(code));
+// The built-in list must not shrink when a browser supports only part of CLDR.
+const catalog = [...new Set([...FALLBACK_CODES, ...Object.keys(favorites), ...codes])].filter(code => /^[A-Z]{3}$/.test(code));
 
 export function getCurrencies(language = 'cs') {
   let names;

@@ -37,12 +37,13 @@ export function averageRates(results) {
     for (const [rawCode, value] of Object.entries(source)) {
       const code = rawCode.toUpperCase();
       if (!allowed.has(code) || !validRate(value)) continue;
-      (inverse[code] ||= []).push(1 / value);
+      const costInBtc = 1 / value;
+      if (validRate(costInBtc)) (inverse[code] ||= []).push(costInBtc);
     }
   }
   return Object.fromEntries(Object.entries(inverse).map(([code, values]) =>
     [code, 1 / (values.reduce((sum, value) => sum + value, 0) / values.length)]
-  ));
+  ).filter(([, rate]) => validRate(rate)));
 }
 
 export const SOURCES = [
