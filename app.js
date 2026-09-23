@@ -88,7 +88,7 @@ export class ConverterApp {
       search:'currency-search', options:'currency-options', install:'install-button',
       menu:'app-menu', menuToggle:'menu-toggle', menuClose:'menu-close', screenTitle:'screen-title',
       donateOpen:'donate-button', donateDialog:'donate-dialog', donateClose:'close-donate',
-      donateUri:'donate-uri', donateLightning:'donate-lightning', copyUri:'copy-uri',
+      donateBtc:'donate-btc', donateLightning:'donate-lightning', copyBtc:'copy-btc',
       copyLightning:'copy-lightning', copyStatus:'copy-status',
       installDialog:'install-dialog', installClose:'close-install', installInstructions:'install-instructions',
       tabConvert:'tab-convert', tabTravel:'tab-travel', tabTrade:'tab-trade',
@@ -835,7 +835,7 @@ export class ConverterApp {
     elements.donateDialog.addEventListener('click', event => {
       if (event.target === elements.donateDialog) elements.donateDialog.close();
     });
-    elements.copyUri.addEventListener('click', () => this.copyDonation(elements.donateUri));
+    elements.copyBtc.addEventListener('click', () => this.copyDonation(elements.donateBtc));
     elements.copyLightning.addEventListener('click', () => this.copyDonation(elements.donateLightning));
     elements.installClose.addEventListener('click', () => elements.installDialog.close());
     elements.installDialog.addEventListener('click', event => { if (event.target === elements.installDialog) elements.installDialog.close(); });

@@ -75,7 +75,7 @@ On Android, use **Install app** in the app's side menu or the browser's install/
 
 ## Source and support
 
-The side menu links to this [open-source repository](https://github.com/agp-l/PriceConverter). Its **Support the project** action provides a `bitcoin:?lno=…` payment link that can be copied or opened in a compatible wallet, plus the raw Lightning **BOLT12 offer** for copying into a BOLT12 wallet. Both represent the same offer. The link has no on-chain Bitcoin address or fallback payment method.
+The side menu links to this [open-source repository](https://github.com/agp-l/PriceConverter). **Support the project** offers two payment methods: an on-chain Bitcoin address (`bc1p…`), which can be copied or opened in a wallet, and a Lightning BOLT12 offer (`lno1…`), which can be copied or opened in a compatible wallet. The Lightning wallet button uses `bitcoin:?lno=…`, a clickable wrapper for the **same** BOLT12 offer, not a third payment method or an on-chain fallback. Phoenix can receive an on-chain deposit into its Lightning wallet; that deposit uses the Bitcoin network rather than a Lightning payment.
 
 ## Project files
 
