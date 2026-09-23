@@ -1,4 +1,4 @@
-const CACHE = 'priceconverter-shell-v7';
+const CACHE = 'priceconverter-shell-v8';
 const SHELL = ['./','./index.html','./style.css','./app.js','./rates.js','./quotes.js','./currencies.js','./i18n.js','./manifest.json','./icon.svg','./icon-192.png','./icon-512.png'];
 const SHELL_URLS = new Set(SHELL.map(path => new URL(path, self.registration.scope).href));
 

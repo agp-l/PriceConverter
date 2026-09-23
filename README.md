@@ -9,9 +9,9 @@ Režim **Osobní směna** počítá výhradně z pohledu uživatele kalkulačky:
 - **Nakupuji BTC:** vyplácím fiat a dostávám BTC. Při výchozích −2 % je moje cena za 1 BTC o 2 % pod tržní cenou.
 - **Prodávám BTC:** předávám BTC a dostávám fiat. Při výchozích +2 % je moje cena za 1 BTC o 2 % nad tržní cenou.
 
-Obě procenta lze nastavit zvlášť, včetně opačného znaménka. Cena nabídky = tržní cena × (1 + odchylka / 100). Zvolte fiat měnu, zadejte pevnou částku v ní nebo množství BTC/SATS a uvidíte obě strany směny, cenu 1 BTC i rozdíl proti trhu. Když zadáte fiat částku, výsledné BTC se zaokrouhlí na celé satoshi: při prodeji dolů, při nákupu nahoru. Při přímém zadání BTC nelze zadat zlomek satoshi. Síťové poplatky, daně ani jiné náklady kalkulačka nepřičítá; rozdíl proti trhu není čistý zisk.
+Obě procenta lze nastavit zvlášť, včetně opačného znaménka. Cena nabídky = referenční cena × (1 + odchylka / 100). Zvolte fiat měnu, zadejte pevnou částku v ní nebo množství BTC/SATS a uvidíte obě strany směny, cenu 1 BTC i rozdíl proti trhu. Referenční cenu lze převzít z posledního načteného kurzu, nebo zadat ručně, třeba pro PYG bez dostupného kurzu; ruční částka se neukládá a při změně měny se vymaže či nahradí dostupným kurzem nové měny. Když zadáte fiat částku, výsledné BTC se zaokrouhlí na celé satoshi: při prodeji dolů, při nákupu nahoru. Při přímém zadání BTC nelze zadat zlomek satoshi. Síťové poplatky, daně ani jiné náklady kalkulačka nepřičítá; rozdíl proti referenční ceně není čistý zisk.
 
-Kurzy se načítají z veřejných zdrojů popsaných níže. Pokud pro měnu kurz není, nabídka se nevypočte. Poslední použitý kurz, jeho stáří a offline stav jsou viditelné nad kalkulačkou. Nastavení měny, nákupní a prodejní odchylky se ukládá jen v prohlížeči; žádné jednotlivé obchody ani zadané částky se neukládají.
+Kurzy se načítají z veřejných zdrojů popsaných níže. Pokud pro měnu kurz není, můžete zadat vlastní referenční cenu; jinak se nabídka nevypočte. Stáří automaticky načteného kurzu a offline stav jsou viditelné nad kalkulačkou. Nastavení měny, nákupní a prodejní odchylky se ukládá jen v prohlížeči; žádné jednotlivé obchody ani zadané částky se neukládají.
 
 ## Převodník a cestování
 

@@ -48,6 +48,8 @@ await check('Neplatné kurzy a poškozená uložená data', () => {
   const restored = restoreSettings(JSON.stringify({selected:['PYG','PYG','INVALID'], cache:{rates:{PYG:5}}}));
   assert(restored.selected.join(',') === 'PYG' && restored.cache === null, 'Obnova stavu');
   assert(restoreSettings('{rozbité').selected.includes('CZK'), 'Poškozené JSON');
+  const settings = restoreSettings(JSON.stringify({buyPercent:-3, sellPercent:4, mode:'trade', tradeCurrency:'PYG'}));
+  assert(settings.buyPercent === -3 && settings.sellPercent === 4 && settings.mode === 'trade' && settings.tradeCurrency === 'PYG', 'Nastavení směny');
 });
 
 await check('Výpadek zdroje neodstaví dostupný kurz', async () => {
@@ -109,6 +111,28 @@ await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
     const option = [...doc.querySelectorAll('.option-button')].find(button => button.textContent.includes('PYG'));
     assert(option, 'PYG není v nabídce'); option.click();
     assert([...doc.querySelectorAll('.currency-code')].some(code => code.textContent === 'PYG'), 'PYG se nepřidalo');
+    doc.querySelector('#tab-trade').click();
+    assert(!doc.querySelector('#trade-pane').hidden && doc.querySelector('#convert-pane').hidden, 'Režim směny');
+    assert(doc.querySelector('#offer-fiat-label').textContent.includes('pay'), 'Směr nákupu BTC');
+    const source = doc.querySelector('#market-source');
+    source.value = 'manual'; source.dispatchEvent(new Event('change', {bubbles:true}));
+    const reference = doc.querySelector('#manual-market');
+    reference.value = '2000000'; reference.dispatchEvent(new Event('input', {bubbles:true}));
+    assert(doc.querySelector('#offer-price').textContent.includes('1,960,000'), 'Ruční kurz a nákupní odchylka');
+    assert(doc.querySelector('#offer-btc').textContent.includes('0.00510205'), 'Nabídka v celých satoshi');
+    assert(!Object.hasOwn(JSON.parse(localStorage.getItem(key)), 'manualMarket'), 'Ruční kurz se neukládá');
+    doc.querySelector('#dealer-sell').click();
+    assert(doc.querySelector('#offer-fiat-label').textContent.includes('receive'), 'Směr prodeje BTC');
+    assert(doc.querySelector('#offer-price').textContent.includes('2,040,000'), 'Samostatná prodejní odchylka');
+    const kind = doc.querySelector('#dealer-amount-kind');
+    kind.value = 'bitcoin'; kind.dispatchEvent(new Event('change', {bubbles:true}));
+    const unit = doc.querySelector('#dealer-unit');
+    unit.value = 'SATS'; unit.dispatchEvent(new Event('change', {bubbles:true}));
+    assert(parseAmount(doc.querySelector('#dealer-amount').value, 'en') === 1_000_000, 'Přepnutí částky na SATS');
+    doc.querySelector('#tab-convert').click();
+    const from = doc.querySelector('#travel-from'); const to = doc.querySelector('#travel-to');
+    const originalFrom = from.value; doc.querySelector('#travel-swap').click();
+    assert(to.value === originalFrom, 'Prohození cestovních měn');
   } finally {
     iframe.remove();
     if (previous === null) localStorage.removeItem(key);

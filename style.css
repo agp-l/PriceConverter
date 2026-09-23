@@ -743,7 +743,8 @@ body {
   background:#fff
 }
 
-.margin-pair,.amount-tools { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px }
+.margin-pair,.amount-tools,.market-tools { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px }
+.market-tools:not(.manual-active) { grid-template-columns:1fr }
 .margin-field {
   display:grid;
   gap:8px;
