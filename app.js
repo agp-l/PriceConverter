@@ -8,7 +8,9 @@ const elements = {
   btcButton:$('#unit-btc'), satsButton:$('#unit-sats'), list:$('#currency-list'),
   count:$('#currency-count'), status:$('#status-text'), dot:$('#status-dot'),
   refresh:$('#refresh'), language:$('#language-switch'), add:$('#add-currency'), dialog:$('#currency-dialog'),
-  close:$('#close-dialog'), search:$('#currency-search'), options:$('#currency-options')
+  close:$('#close-dialog'), search:$('#currency-search'), options:$('#currency-options'),
+  install:$('#install-button'), installDialog:$('#install-dialog'), installClose:$('#close-install'),
+  installInstructions:$('#install-instructions')
 };
 const currencyCodes = new Set(CURRENCIES.map(currency => currency.code));
 const key = 'priceconverter:v1';
@@ -33,6 +35,15 @@ const state = {selected:stored.selected, unit:stored.unit, cache:stored.cache,
   anchor:'BTC', raw:'1', btc:1, busy:false, error:false};
 let currencies = getCurrencies(state.language);
 const tr = (message, parameters) => t(state.language,message,parameters);
+let installPrompt = null;
+const installed = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+
+function updateInstallButton() { elements.install.hidden = installed(); }
+
+function showInstallInstructions() {
+  showInstallInstructionsText();
+  elements.installDialog.showModal();
+}
 
 function save() {
   try { localStorage.setItem(key, JSON.stringify({selected:state.selected,unit:state.unit,cache:state.cache,languageMode:state.languageMode})); } catch { /* Private mode or full storage: conversion still works. */ }
@@ -157,9 +168,17 @@ function applyLanguage() {
   elements.refresh.title = tr('refresh');
   elements.refresh.setAttribute('aria-label',tr('refresh'));
   elements.caption.textContent = tr(state.unit === 'SATS' ? 'satsCaption' : 'bitcoinCaption');
+  if (elements.installDialog.open) showInstallInstructionsText();
   state.raw = format(fromBtc(state.btc,state.anchor,state.cache?.rates || {},state.unit),state.anchor);
   if (state.anchor === 'BTC') elements.btc.value = state.raw;
   renderRows(); renderOptions(); showStatus();
+}
+
+function showInstallInstructionsText() {
+  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const android = /Android/i.test(navigator.userAgent);
+  const hint = !window.isSecureContext ? 'installHttps' : ios ? 'installIos' : android ? 'installAndroid' : 'installDesktop';
+  elements.installInstructions.textContent = tr(hint);
 }
 
 async function refresh() {
@@ -190,6 +209,20 @@ elements.add.addEventListener('click', () => { renderOptions(); elements.dialog.
 elements.close.addEventListener('click', () => elements.dialog.close());
 elements.dialog.addEventListener('click', event => { if (event.target === elements.dialog) elements.dialog.close(); });
 elements.search.addEventListener('input', renderOptions);
+elements.install.addEventListener('click', async () => {
+  if (!installPrompt) { showInstallInstructions(); return; }
+  const prompt = installPrompt;
+  installPrompt = null;
+  try {
+    await prompt.prompt();
+    await prompt.userChoice;
+  } catch { showInstallInstructions(); }
+});
+elements.installClose.addEventListener('click', () => elements.installDialog.close());
+elements.installDialog.addEventListener('click', event => { if (event.target === elements.installDialog) elements.installDialog.close(); });
+window.addEventListener('beforeinstallprompt', event => { event.preventDefault(); installPrompt = event; updateInstallButton(); });
+window.addEventListener('appinstalled', () => { installPrompt = null; elements.install.hidden = true; });
+window.matchMedia('(display-mode: standalone)').addEventListener?.('change', updateInstallButton);
 window.addEventListener('online', () => { showStatus(); refresh(); });
 window.addEventListener('offline', showStatus);
 setInterval(showStatus, 60_000);
@@ -201,4 +234,5 @@ if (state.unit === 'SATS') {
   elements.btcButton.classList.remove('selected'); elements.btcButton.setAttribute('aria-pressed','false');
 }
 applyLanguage(); refresh();
+updateInstallButton();
 if ('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register('./sw.js').catch(() => {});
