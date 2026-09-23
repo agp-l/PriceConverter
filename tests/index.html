@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PriceConverter · testy v prohlížeči</title>
+  <style>
+    body{max-width:660px;margin:40px auto;padding:0 20px;font:16px/1.5 system-ui,sans-serif;color:#173d31;background:#f8faf6}
+    li{margin:8px 0} .pass{color:#28784a} .fail{color:#a32929} iframe{position:absolute;left:-10000px;width:390px;height:800px}
+  </style>
+</head>
+<body>
+  <h1>Testy PriceConverter</h1>
+  <p>Tyto testy běží přímo v prohlížeči, bez Node.js a dalších závislostí.</p>
+  <ol id="results" aria-live="polite"></ol>
+  <p id="summary"></p>
+  <script type="module" src="./browser-tests.js"></script>
+</body>
+</html>

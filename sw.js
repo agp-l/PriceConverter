@@ -1,25 +1,28 @@
-const CACHE = 'priceconverter-shell-v5';
+const CACHE = 'priceconverter-shell-v6';
 const SHELL = ['./','./index.html','./style.css','./app.js','./rates.js','./currencies.js','./i18n.js','./manifest.json','./icon.svg','./icon-192.png','./icon-512.png'];
+const SHELL_URLS = new Set(SHELL.map(path => new URL(path, self.registration.scope).href));
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', event => {
-  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim()));
+  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('priceconverter-shell-') && key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim()));
 });
 self.addEventListener('fetch', event => {
   const request = event.request;
   if (request.method !== 'GET' || new URL(request.url).origin !== self.location.origin) return;
-  // Use fresh app files when connected; retain the latest successful response
-  // for offline visits, including updates that don't change this worker file.
+  const isShell = SHELL_URLS.has(request.url);
+  if (!isShell && request.mode !== 'navigate') return;
+  // Only cache this app's files. Other paths on the same host belong to their owners.
   event.respondWith(fetch(request).then(async response => {
-    if (response.ok) {
+    if (response.ok && isShell) {
       const cache = await caches.open(CACHE);
       await cache.put(request, response.clone()).catch(() => {});
     }
     return response;
   }).catch(async () => {
-    const cached = await caches.match(request);
-    return cached || (request.mode === 'navigate' ? caches.match('./index.html') : Response.error());
+    const cache = await caches.open(CACHE);
+    const cached = isShell ? await cache.match(request) : null;
+    return cached || (request.mode === 'navigate' ? cache.match('./index.html') : Response.error());
   }));
 });

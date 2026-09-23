@@ -1,6 +1,6 @@
 # PriceConverter
 
-Samostatná mobilně pojatá webová aplikace pro okamžitý převod mezi BTC, satoshi a fiat měnami. Čisté HTML, CSS a JavaScript bez frameworků, build kroku a serverové databáze.
+Samostatná mobilně pojatá webová aplikace pro okamžitý převod mezi BTC, satoshi a fiat měnami. Čisté HTML, CSS a JavaScript bez Node.js, frameworků, build kroku a serverové databáze. Rozhraní a stav řídí třída `ConverterApp` v ES modulu `app.js`; výpočty kurzů, měny a překlady mají samostatné moduly.
 
 ## Použití
 
@@ -28,10 +28,6 @@ Stejně jako [původní Android projekt](https://github.com/minimalist-freedom-a
 
 ## Ověření
 
-```sh
-node --test tests/*.test.mjs
-```
-
-Provozní soubory nepotřebují Node.js. Aplikace i service worker používají relativní cesty, takže fungují také v podadresáři GitHub Pages.
+Spusťte stejný lokální server jako výše a v prohlížeči otevřete `http://localhost:8000/tests/`. Testy převodů, jazyka, obnovy uložených dat a skutečného rozhraní běží přímo v prohlížeči, bez instalace balíčků. Aplikace i service worker používají relativní cesty, takže fungují také v podadresáři.
 
 Nový jazyk přidejte do slovníku v `i18n.js` a do `SUPPORTED_LANGUAGES`. Názvy měn poskytuje pro zvolený jazyk `Intl.DisplayNames` v `currencies.js` (při nepodporovaném jazyku zůstává kód měny). Přepínač v `index.html` doplňte o další volbu. Překlady, formát částek a názvy měn jsou oddělené od načítání kurzů.
