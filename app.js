@@ -95,6 +95,7 @@ export class ConverterApp {
       travelDifference:'travel-difference', travelPercent:'travel-percent',
       travelSourceEquivalent:'travel-source-equivalent', travelOfferError:'travel-offer-error',
       chartPreview:'chart-preview', chartPeriod:'chart-period', chartVisibility:'show-chart-preview',
+      chartPreviewState:'chart-preview-state',
       chartRange:'chart-range', miniChart:'mini-chart', miniChartFallback:'mini-chart-fallback', openChart:'open-chart',
       largeChart:'large-chart',
       largeChartFallback:'large-chart-fallback',
@@ -300,6 +301,7 @@ export class ConverterApp {
   syncChartSettings() {
     const {state, elements} = this;
     elements.chartVisibility.checked = state.showChartPreview;
+    elements.chartPreviewState.textContent = this.tr(state.showChartPreview ? 'switchOn' : 'switchOff');
     elements.chartRange.value = state.chartRange;
     elements.chartPeriod.textContent = this.tr('chartPeriod',
       {period:this.tr({ '1M':'chartMonth', '3M':'chartQuarter', '12M':'chartYear',
