@@ -61,7 +61,7 @@ export function restoreSettings(json) {
     chartRange:CHART_RANGES.includes(saved.chartRange) ? saved.chartRange : '12M',
     tradeCurrency:savedCurrency(saved.tradeCurrency, 'CZK'),
     marginPercent,
-    dealerSide:saved.dealerSide === 'sell' ? 'sell' : 'buy',
+    dealerSide:saved.dealerSide === 'buy' ? 'buy' : 'sell',
     dealerKind:saved.dealerKind === 'bitcoin' ? 'bitcoin' : 'fiat',
     travelFrom:savedCurrency(saved.travelFrom, 'CZK'), travelTo:savedCurrency(saved.travelTo, 'EUR')};
 }

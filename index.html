@@ -67,7 +67,7 @@
       </div>
 
       <div id="trade-pane" class="screen-pane" role="region" aria-labelledby="screen-title" hidden>
-        <div class="trade-side" role="group" aria-label="Směr obchodu" data-i18n-aria-label="tradeSideLabel"><button type="button" id="dealer-buy" class="selected" aria-pressed="true" data-i18n="dealerBuy">Nakupuji BTC</button><button type="button" id="dealer-sell" aria-pressed="false" data-i18n="dealerSell">Prodávám BTC</button></div>
+        <div class="trade-side" role="group" aria-label="Směr obchodu" data-i18n-aria-label="tradeSideLabel"><button type="button" id="dealer-sell" class="selected" aria-pressed="true" data-i18n="dealerSell">Prodávám BTC</button><button type="button" id="dealer-buy" aria-pressed="false" data-i18n="dealerBuy">Nakupuji BTC</button></div>
         <div class="trade-settings">
           <label class="field-label" for="dealer-currency"><span data-i18n="tradeCurrency">Měna obchodu</span><select id="dealer-currency" class="field-select"></select></label>
           <div class="market-tools" id="market-tools"><label class="field-label" for="market-source"><span data-i18n="marketSource">Referenční cena</span><select id="market-source" class="field-select"><option value="live" data-i18n="marketAutomatic">Automatický kurz</option><option value="manual" data-i18n="marketManual">Zadám vlastní cenu</option></select></label><label class="field-label" id="manual-market-wrap" for="manual-market" hidden><span data-i18n="manualMarketLabel">Cena 1 BTC ve zvolené měně</span><input id="manual-market" class="field-input" type="text" inputmode="decimal" autocomplete="off"></label></div>
@@ -99,8 +99,8 @@
       <div class="menu-header"><span class="menu-monogram" aria-hidden="true">₿</span><h2 id="menu-title">VexlCalc</h2><button id="menu-close" class="menu-close" type="button" aria-label="Zavřít nabídku" data-i18n-aria-label="closeMenu">×</button></div>
       <nav class="drawer-nav" aria-label="Obrazovky aplikace" data-i18n-aria-label="modeLabel">
         <button type="button" id="tab-convert" data-mode="convert" aria-controls="convert-pane" aria-current="page"><span class="nav-icon" aria-hidden="true">₿</span><span data-i18n="converterTab">Převodník</span><span class="nav-arrow" aria-hidden="true">›</span></button>
-        <button type="button" id="tab-travel" data-mode="travel" aria-controls="travel-pane"><span class="nav-icon" aria-hidden="true">↔</span><span data-i18n="travelHeading">Měna za měnu</span><span class="nav-arrow" aria-hidden="true">›</span></button>
         <button type="button" id="tab-trade" data-mode="trade" aria-controls="trade-pane"><span class="nav-icon" aria-hidden="true">%</span><span data-i18n="tradeTab">Osobní směna</span><span class="nav-arrow" aria-hidden="true">›</span></button>
+        <button type="button" id="tab-travel" data-mode="travel" aria-controls="travel-pane"><span class="nav-icon" aria-hidden="true">↔</span><span data-i18n="travelHeading">Měna za měnu</span><span class="nav-arrow" aria-hidden="true">›</span></button>
         <button type="button" id="tab-chart" data-mode="chart" aria-controls="chart-pane"><span class="nav-icon" aria-hidden="true">▥</span><span data-i18n="chartTab">Graf BTC</span><span class="nav-arrow" aria-hidden="true">›</span></button>
         <button type="button" id="tab-settings" data-mode="settings" aria-controls="settings-pane"><span class="nav-icon" aria-hidden="true">⚙</span><span data-i18n="settingsTab">Nastavení</span><span class="nav-arrow" aria-hidden="true">›</span></button>
       </nav>
