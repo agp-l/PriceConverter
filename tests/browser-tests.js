@@ -264,7 +264,7 @@ await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
     const tabs = [...doc.querySelectorAll('.drawer-nav button')].map(button => button.id);
     assert(tabs.indexOf('tab-trade') < tabs.indexOf('tab-travel'), 'Osobní směna je nad cestovním převodem');
     assert(doc.querySelector('#app-menu #install-button') && !doc.querySelector('.app-footer'), 'Instalace v menu');
-    assert(doc.querySelector('#app-menu a[href="https://github.com/agp-l/PriceConverter"]'), 'Otevřený zdrojový kód');
+    assert(doc.querySelector('#app-menu a[href="https://github.com/agp-l/VexlCalc"]'), 'Otevřený zdrojový kód');
     doc.querySelector('#donate-button').click();
     assert(doc.querySelector('#donate-dialog').open && !doc.querySelector('#app-menu').open, 'Darovací dialog');
     const offer = 'lno1pgqppmsrse80qf0aara4slvcjxrvu6j2rp5ftmjy4yntlsmsutpkvkt6878s9djjdxvyqd662tfrqukn702zjpdf3d880gn796tfwxqx4f0ghhr2qgp0u6v74fjryur6yu6a8edrarxhlexn6c2zac6422fuhzl7wzxfn4sqxv4emt4kt78quvcs4sptd9cs3f8vxmqfe4khrd809ngvs87yjgljvxz8fcduqs522rryf5n2qmm2zekjaz2qy58e92uv063uu98kqd9v5996drn7pp49slm5jl5086f2jenlt58aqqeqcykddz9dgp7fxza5z2ywmrf9uyfxkcm90cd46kge4fsxts5udytf2mjj4z2xrvddvl37s59v037dkfrq';
