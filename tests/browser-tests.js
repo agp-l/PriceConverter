@@ -58,6 +58,8 @@ await check('Neplatné kurzy a poškozená uložená data', () => {
   assert(travelSettings.mode === 'travel' && travelSettings.selected.join(',') === 'PYG,EUR,CZK', 'Cestovní režim a pořadí měn');
   const chartSettings = restoreSettings(JSON.stringify({mode:'chart',showChartPreview:false,chartRange:'3M'}));
   assert(chartSettings.mode === 'chart' && !chartSettings.showChartPreview && chartSettings.chartRange === '3M', 'Uložený graf');
+  assert(restoreSettings('{"chartRange":"60M"}').chartRange === '60M', 'Pětiletý rozsah');
+  assert(restoreSettings('{"chartRange":"MAX"}').chartRange === 'MAX', 'Rozsah MAX');
   const invalidChart = restoreSettings(JSON.stringify({mode:'other',showChartPreview:'false',chartRange:'0D'}));
   assert(invalidChart.mode === 'convert' && invalidChart.showChartPreview && invalidChart.chartRange === '12M', 'Neplatné nastavení grafu');
 });
@@ -133,6 +135,27 @@ await check('Roční graf BTC načítá správný symbol a interval', () => {
   app.resetChart = () => { app.wasReset = true; };
   ConverterApp.prototype.loadMiniChart.call(app);
   assert(app.wasReset && captured.config.dateRange === '3M', 'Změna období obnoví widget');
+  app.state.chartRange = 'MAX';
+  ConverterApp.prototype.loadMiniChart.call(app);
+  assert(captured.config.dateRange === 'ALL', 'MAX načítá dostupnou historii malého grafu');
+  app.state.chartRange = '60M';
+  ConverterApp.prototype.loadMiniChart.call(app);
+  assert(captured.config.dateRange === '60M', 'Pětiletý náhled');
+});
+
+await check('Detailní graf otevře pět let a celou historii', () => {
+  let captured;
+  const app = {largeChartLoaded:false, state:{mode:'chart',chartRange:'60M'},
+    elements:{largeChart:{},largeChartFallback:{}},
+    embedChart:(container,fallback,filename,config) => { captured = {filename,config}; return true; },
+    resetChart:() => {}};
+  ConverterApp.prototype.loadLargeChart.call(app);
+  assert(captured.filename === 'embed-widget-advanced-chart.js' && captured.config.interval === 'W' &&
+    captured.config.timeframe === '60M', 'Pětiletý detail');
+  app.state.chartRange = 'MAX';
+  ConverterApp.prototype.loadLargeChart.call(app);
+  assert(captured.config.interval === 'M' && captured.config.timeframe.from === Date.UTC(2009,0,3)/1000 &&
+    captured.config.timeframe.to > captured.config.timeframe.from, 'MAX obsahuje kompletní dostupnou historii');
 });
 
 await check('Kopírování darovacích údajů a ruční záloha', async () => {
@@ -244,6 +267,7 @@ await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
     assert(doc.querySelector('.chart-preview') && doc.querySelector('.chart-preview').textContent.includes('1 year'), 'Roční náhled grafu');
     doc.querySelector('#open-chart').click();
     assert(!doc.querySelector('#chart-pane').hidden && doc.querySelector('#convert-pane').hidden, 'Samostatná obrazovka grafu');
+    assert(doc.querySelector('#app').classList.contains('chart-mode'), 'Graf má výšku obrazovky');
     assert(doc.querySelector('#refresh').hidden && doc.querySelector('#rates-status').hidden, 'Graf nemá tlačítko aktualizace kurzů');
     doc.querySelector('#menu-toggle').click();
     doc.querySelector('#tab-settings').click();
@@ -254,6 +278,9 @@ await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
     range.value = '3M'; range.dispatchEvent(new Event('change', {bubbles:true}));
     assert(JSON.parse(localStorage.getItem(key)).showChartPreview === false &&
       JSON.parse(localStorage.getItem(key)).chartRange === '3M', 'Uložení viditelnosti a období');
+    range.value = 'MAX'; range.dispatchEvent(new Event('change', {bubbles:true}));
+    assert(JSON.parse(localStorage.getItem(key)).chartRange === 'MAX', 'Uložení MAX');
+    range.value = '3M'; range.dispatchEvent(new Event('change', {bubbles:true}));
     doc.querySelector('#menu-toggle').click();
     doc.querySelector('#tab-convert').click();
     assert(doc.querySelector('#chart-preview').hidden && doc.querySelector('#rates-status').hidden === false, 'Převodník bez malého grafu');

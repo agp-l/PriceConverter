@@ -5,7 +5,7 @@ import {parsePercent, tradeQuote, travelQuote, compareTravelOffer} from './quote
 
 const STORAGE_KEY = 'priceconverter:v1';
 const DEFAULT_CURRENCIES = ['CZK', 'EUR', 'USD'];
-const CHART_RANGES = ['1M', '3M', '12M'];
+const CHART_RANGES = ['1M', '3M', '12M', '60M', 'MAX'];
 const CURRENCY_CODES = new Set(CURRENCIES.map(currency => currency.code));
 const isRate = value => typeof value === 'number' && Number.isFinite(value) && value > 0;
 const searchable = value => value.toLocaleLowerCase('cs').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -277,7 +277,8 @@ export class ConverterApp {
     elements.chartVisibility.checked = state.showChartPreview;
     elements.chartRange.value = state.chartRange;
     elements.chartPeriod.textContent = this.tr('chartPeriod',
-      {period:this.tr({ '1M':'chartMonth', '3M':'chartQuarter', '12M':'chartYear' }[state.chartRange])});
+      {period:this.tr({ '1M':'chartMonth', '3M':'chartQuarter', '12M':'chartYear',
+        '60M':'chartFiveYears', MAX:'chartMax' }[state.chartRange])});
     elements.chartPreview.hidden = !state.showChartPreview;
     if (!state.showChartPreview && this.miniChartLoaded) {
       this.resetChart(elements.miniChart);
@@ -403,7 +404,8 @@ export class ConverterApp {
     this.miniChartLoaded = this.embedChart(miniChart, miniChartFallback,
       'embed-widget-mini-symbol-overview.js', {
         symbol:'BITSTAMP:BTCUSD', width:'100%', height:'100%', locale:'en',
-        dateRange:this.state.chartRange, colorTheme:'light', chartOnly:true, noTimeScale:true,
+        dateRange:this.state.chartRange === 'MAX' ? 'ALL' : this.state.chartRange,
+        colorTheme:'light', chartOnly:true, noTimeScale:true,
         isTransparent:true, autosize:true, trendLineColor:'rgba(110, 52, 168, 1)',
         underLineColor:'rgba(157, 103, 205, 0.22)', underLineBottomColor:'rgba(157, 103, 205, 0)'
       });
@@ -424,8 +426,11 @@ export class ConverterApp {
     }
     this.largeChartLoaded = this.embedChart(largeChart, largeChartFallback,
       'embed-widget-advanced-chart.js', {
-        autosize:true, symbol:'BITSTAMP:BTCUSD', interval:this.state.chartRange === '12M' ? 'W' : 'D',
-        range:this.state.chartRange,
+        autosize:true, symbol:'BITSTAMP:BTCUSD',
+        interval:this.state.chartRange === 'MAX' ? 'M' : ['12M', '60M'].includes(this.state.chartRange) ? 'W' : 'D',
+        ...(this.state.chartRange === 'MAX' ? {} : {range:this.state.chartRange}),
+        timeframe:this.state.chartRange === 'MAX'
+          ? {from:Date.UTC(2009, 0, 3) / 1000, to:Math.floor(Date.now() / 1000)} : this.state.chartRange,
         timezone:'Etc/UTC', theme:'light', style:'1', locale:'en',
         backgroundColor:'#faf8ff', gridColor:'rgba(57, 32, 101, 0.08)',
         hide_side_toolbar:true, allow_symbol_change:false, withdateranges:true,
