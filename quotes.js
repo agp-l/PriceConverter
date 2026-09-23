@@ -10,15 +10,16 @@ export function parsePercent(raw, language = 'cs') {
   const parsed = parseAmount(unsigned, language);
   if (parsed === null) return null;
   const result = negative ? -parsed : parsed;
-  return result > -100 && result <= 1000 ? result : null;
+  // One margin must produce a positive price for both trade directions.
+  return result > -100 && result < 100 ? result : null;
 }
 
 // Side always describes the calculator owner's action, never the customer's.
-export function tradeQuote({marketRate, percent, side, amount, amountKind = 'fiat', unit = 'BTC'}) {
-  if (!validRate(marketRate) || !Number.isFinite(percent) || percent <= -100 || percent > 1000 ||
+export function tradeQuote({marketRate, marginPercent, side, amount, amountKind = 'fiat', unit = 'BTC'}) {
+  if (!validRate(marketRate) || !Number.isFinite(marginPercent) || marginPercent <= -100 || marginPercent >= 100 ||
       !['buy', 'sell'].includes(side) || !Number.isFinite(amount) || amount < 0 ||
       !['fiat', 'bitcoin'].includes(amountKind) || !['BTC', 'SATS'].includes(unit)) return null;
-  const offeredRate = marketRate * (1 + percent / 100);
+  const offeredRate = marketRate * (1 + (side === 'buy' ? -marginPercent : marginPercent) / 100);
   if (!validRate(offeredRate)) return null;
   let sats;
   let fiat;
@@ -41,7 +42,7 @@ export function tradeQuote({marketRate, percent, side, amount, amountKind = 'fia
   if (!Number.isFinite(fiat) || !Number.isSafeInteger(sats) || (amount > 0 && sats === 0)) return null;
   const btc = sats / SATS_PER_BTC;
   const difference = (side === 'buy' ? marketRate - offeredRate : offeredRate - marketRate) * btc;
-  return {marketRate, offeredRate, percent, side, fiat, sats, btc, difference};
+  return {marketRate, offeredRate, marginPercent, side, fiat, sats, btc, difference};
 }
 
 // A fiat-to-fiat estimate derived from the same BTC quotes as the converter.

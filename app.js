@@ -8,7 +8,7 @@ const DEFAULT_CURRENCIES = ['CZK', 'EUR', 'USD'];
 const CURRENCY_CODES = new Set(CURRENCIES.map(currency => currency.code));
 const isRate = value => typeof value === 'number' && Number.isFinite(value) && value > 0;
 const searchable = value => value.toLocaleLowerCase('cs').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-const savedPercent = (value, fallback) => typeof value === 'number' && Number.isFinite(value) && value > -100 && value <= 1000 ? value : fallback;
+const savedPercent = (value, fallback) => typeof value === 'number' && Number.isFinite(value) && value > -100 && value < 100 ? value : fallback;
 const savedCurrency = (value, fallback) => CURRENCY_CODES.has(value) ? value : fallback;
 
 // Keep one storage format across releases. Discard malformed fields individually.
@@ -29,11 +29,15 @@ export function restoreSettings(json) {
     const sources = storedCache.sources.filter(name => typeof name === 'string' && name.length < 80);
     if (Object.keys(rates).length && sources.length) cache = {rates, sources, updatedAt:storedCache.updatedAt};
   }
+  // Older versions saved signed buy/sell adjustments. Keep the active side's
+  // price when migrating: buying below market used a negative adjustment.
+  const legacyMargin = saved.dealerSide === 'sell' ? saved.sellPercent : -saved.buyPercent;
+  const marginPercent = savedPercent(saved.marginPercent, savedPercent(legacyMargin, 2));
   return {selected, unit:saved.unit === 'SATS' ? 'SATS' : 'BTC', cache,
     languageMode:['cs', 'en'].includes(saved.languageMode) ? saved.languageMode : 'auto',
     mode:saved.mode === 'trade' ? 'trade' : 'convert',
     tradeCurrency:savedCurrency(saved.tradeCurrency, 'CZK'),
-    buyPercent:savedPercent(saved.buyPercent, -2), sellPercent:savedPercent(saved.sellPercent, 2),
+    marginPercent,
     dealerSide:saved.dealerSide === 'sell' ? 'sell' : 'buy',
     dealerKind:saved.dealerKind === 'bitcoin' ? 'bitcoin' : 'fiat',
     travelFrom:savedCurrency(saved.travelFrom, 'CZK'), travelTo:savedCurrency(saved.travelTo, 'EUR')};
@@ -53,10 +57,9 @@ export class ConverterApp {
       travelAmount:'travel-amount', travelFrom:'travel-from', travelTo:'travel-to', travelSwap:'travel-swap',
       travelValue:'travel-value', travelRate:'travel-rate',
       dealerBuy:'dealer-buy', dealerSell:'dealer-sell', tradeExplanation:'trade-explanation',
-      dealerCurrency:'dealer-currency', buyPercent:'buy-percent', sellPercent:'sell-percent',
+      dealerCurrency:'dealer-currency', marginPercent:'margin-percent', marginPreview:'margin-preview',
       marketSource:'market-source', marketTools:'market-tools', manualMarketWrap:'manual-market-wrap',
       manualMarket:'manual-market', marketSourceHint:'market-source-hint',
-      buyMarginField:'buy-margin-field', sellMarginField:'sell-margin-field',
       dealerKind:'dealer-amount-kind', dealerUnit:'dealer-unit', dealerAmount:'dealer-amount',
       offerFiatLabel:'offer-fiat-label', offerBtcLabel:'offer-btc-label', offerFiat:'offer-fiat',
       offerBtc:'offer-btc', offerMarket:'offer-market', offerMarketLabel:'offer-market-label', offerPrice:'offer-price',
@@ -79,10 +82,10 @@ export class ConverterApp {
   tr(key, parameters) { return t(this.state.language, key, parameters); }
 
   save() {
-    const {selected, unit, cache, languageMode, mode, tradeCurrency, buyPercent, sellPercent,
+    const {selected, unit, cache, languageMode, mode, tradeCurrency, marginPercent,
       dealerSide, dealerKind, travelFrom, travelTo} = this.state;
     try { this.win.localStorage.setItem(STORAGE_KEY, JSON.stringify({selected, unit, cache, languageMode,
-      mode, tradeCurrency, buyPercent, sellPercent, dealerSide, dealerKind, travelFrom, travelTo})); }
+      mode, tradeCurrency, marginPercent, dealerSide, dealerKind, travelFrom, travelTo})); }
     catch { /* Conversion remains available without local storage. */ }
   }
 
@@ -248,8 +251,6 @@ export class ConverterApp {
     elements.dealerSell.classList.toggle('selected', !buying);
     elements.dealerBuy.setAttribute('aria-pressed', String(buying));
     elements.dealerSell.setAttribute('aria-pressed', String(!buying));
-    elements.buyMarginField.classList.toggle('active', buying);
-    elements.sellMarginField.classList.toggle('active', !buying);
     elements.tradeExplanation.textContent = this.tr(buying ? 'buyExplanation' : 'sellExplanation', {currency:state.tradeCurrency});
     elements.offerFiatLabel.textContent = this.tr(buying ? 'fiatPaid' : 'fiatReceived');
     elements.offerBtcLabel.textContent = this.tr(buying ? 'btcReceived' : 'btcDelivered');
@@ -259,9 +260,16 @@ export class ConverterApp {
     elements.marketTools.classList.toggle('manual-active', manual);
     elements.marketSourceHint.textContent = this.tr(manual ? 'manualMarketHint' : 'automaticMarketHint');
     const amount = parseAmount(elements.dealerAmount.value, state.language);
-    const percent = parsePercent(buying ? elements.buyPercent.value : elements.sellPercent.value, state.language);
+    const marginPercent = parsePercent(elements.marginPercent.value, state.language);
+    const percentText = marginPercent === null ? '' : new Intl.NumberFormat(state.language === 'cs' ? 'cs-CZ' : 'en-US',
+      {maximumFractionDigits:4, useGrouping:false}).format(Math.abs(marginPercent));
+    const previewKey = marginPercent === null ? 'marginInvalid' : marginPercent === 0 ? 'marginZero'
+      : marginPercent > 0 ? buying ? 'marginBuyFavorable' : 'marginSellFavorable'
+        : buying ? 'marginBuyUnfavorable' : 'marginSellUnfavorable';
+    elements.marginPreview.textContent = this.tr(previewKey, {percent:percentText});
+    elements.marginPreview.classList.toggle('unfavorable', marginPercent !== null && marginPercent < 0);
     const marketRate = manual ? parseAmount(elements.manualMarket.value, state.language) : state.cache?.rates?.[state.tradeCurrency];
-    const quote = amount === null || percent === null ? null : tradeQuote({marketRate, percent,
+    const quote = amount === null || marginPercent === null ? null : tradeQuote({marketRate, marginPercent,
       side:state.dealerSide, amount, amountKind:state.dealerKind, unit:state.unit});
     const fiat = number => `${this.format(number, state.tradeCurrency)} ${state.tradeCurrency}`;
     elements.offerFiat.textContent = quote ? fiat(quote.fiat) : '—';
@@ -273,7 +281,7 @@ export class ConverterApp {
     elements.offerPrice.textContent = quote ? fiat(quote.offeredRate) : '—';
     elements.offerDifference.textContent = quote ? `${quote.difference > 0 ? '+' : ''}${fiat(quote.difference)}` : '—';
     elements.tradeValidation.textContent = !isRate(marketRate) ? this.tr(manual ? 'invalidMarketRate' : 'tradeNoRate', {currency:state.tradeCurrency})
-      : amount === null ? this.tr('invalidAmount') : percent === null ? this.tr('invalidPercent')
+      : amount === null ? this.tr('invalidAmount') : marginPercent === null ? this.tr('invalidPercent')
       : !quote ? this.tr('invalidTrade') : '';
   }
 
@@ -338,8 +346,7 @@ export class ConverterApp {
     const travelAmount = parseAmount(elements.travelAmount.value, state.language);
     const tradeFiatAmount = parseAmount(this.tradeFiatRaw, state.language);
     const tradeBitcoinAmount = parseAmount(this.tradeBitcoinRaw, state.language);
-    const buyPercent = parsePercent(elements.buyPercent.value, state.language);
-    const sellPercent = parsePercent(elements.sellPercent.value, state.language);
+    const marginPercent = parsePercent(elements.marginPercent.value, state.language);
     const manualRate = parseAmount(elements.manualMarket.value, state.language);
     state.language = resolveLanguage(state.languageMode, this.deviceLanguages);
     this.currencies = new Map(getCurrencies(state.language).map(currency => [currency.code, currency]));
@@ -350,8 +357,7 @@ export class ConverterApp {
     if (tradeBitcoinAmount !== null) this.tradeBitcoinRaw = this.formatEntry(tradeBitcoinAmount, this.tradeBitcoinRaw, 'BTC');
     elements.dealerAmount.value = state.dealerKind === 'fiat' ? this.tradeFiatRaw : this.tradeBitcoinRaw;
     const percentFormatter = new Intl.NumberFormat(state.language === 'cs' ? 'cs-CZ' : 'en-US', {maximumFractionDigits:4, useGrouping:false});
-    if (buyPercent !== null) elements.buyPercent.value = percentFormatter.format(buyPercent);
-    if (sellPercent !== null) elements.sellPercent.value = percentFormatter.format(sellPercent);
+    if (marginPercent !== null) elements.marginPercent.value = percentFormatter.format(marginPercent);
     if (manualRate !== null) elements.manualMarket.value = this.formatEntry(manualRate, elements.manualMarket.value, state.tradeCurrency);
     this.doc.documentElement.lang = state.language;
     this.doc.title = this.tr('pageTitle');
@@ -418,8 +424,7 @@ export class ConverterApp {
     const {elements, win} = this;
     elements.btc.value = this.state.raw;
     const percentFormatter = new Intl.NumberFormat(this.state.language === 'cs' ? 'cs-CZ' : 'en-US', {maximumFractionDigits:4, useGrouping:false});
-    elements.buyPercent.value = percentFormatter.format(this.state.buyPercent);
-    elements.sellPercent.value = percentFormatter.format(this.state.sellPercent);
+    elements.marginPercent.value = percentFormatter.format(this.state.marginPercent);
     elements.dealerAmount.value = this.state.dealerKind === 'fiat' ? this.tradeFiatRaw : this.tradeBitcoinRaw;
     elements.btc.addEventListener('input', () => this.recalculate('BTC', elements.btc.value));
     elements.btc.addEventListener('focus', () => elements.btc.select());
@@ -465,13 +470,11 @@ export class ConverterApp {
       this.renderTrade();
     });
     elements.manualMarket.addEventListener('input', () => this.renderTrade());
-    for (const [input, key] of [[elements.buyPercent, 'buyPercent'], [elements.sellPercent, 'sellPercent']]) {
-      input.addEventListener('input', () => {
-        const percent = parsePercent(input.value, this.state.language);
-        if (percent !== null) { this.state[key] = percent; this.save(); }
-        this.renderTrade();
-      });
-    }
+    elements.marginPercent.addEventListener('input', () => {
+      const percent = parsePercent(elements.marginPercent.value, this.state.language);
+      if (percent !== null) { this.state.marginPercent = percent; this.save(); }
+      this.renderTrade();
+    });
     elements.dealerAmount.addEventListener('input', () => {
       if (this.state.dealerKind === 'fiat') this.tradeFiatRaw = elements.dealerAmount.value;
       else this.tradeBitcoinRaw = elements.dealerAmount.value;

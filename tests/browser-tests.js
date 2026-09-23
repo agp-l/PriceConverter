@@ -48,8 +48,12 @@ await check('Neplatné kurzy a poškozená uložená data', () => {
   const restored = restoreSettings(JSON.stringify({selected:['PYG','PYG','INVALID'], cache:{rates:{PYG:5}}}));
   assert(restored.selected.join(',') === 'PYG' && restored.cache === null, 'Obnova stavu');
   assert(restoreSettings('{rozbité').selected.includes('CZK'), 'Poškozené JSON');
-  const settings = restoreSettings(JSON.stringify({buyPercent:-3, sellPercent:4, mode:'trade', tradeCurrency:'PYG'}));
-  assert(settings.buyPercent === -3 && settings.sellPercent === 4 && settings.mode === 'trade' && settings.tradeCurrency === 'PYG', 'Nastavení směny');
+  const settings = restoreSettings(JSON.stringify({marginPercent:3, mode:'trade', tradeCurrency:'PYG'}));
+  assert(settings.marginPercent === 3 && settings.mode === 'trade' && settings.tradeCurrency === 'PYG', 'Nastavení směny');
+  assert(restoreSettings('{}').marginPercent === 2, 'Výchozí výhoda');
+  assert(restoreSettings(JSON.stringify({buyPercent:-3, sellPercent:4})).marginPercent === 3, 'Převod staré nákupní ceny');
+  assert(restoreSettings(JSON.stringify({buyPercent:-3, sellPercent:4, dealerSide:'sell'})).marginPercent === 4, 'Převod staré prodejní ceny');
+  assert(restoreSettings(JSON.stringify({marginPercent:-2, buyPercent:-3})).marginPercent === -2, 'Nové nastavení má přednost');
 });
 
 await check('Výpadek zdroje neodstaví dostupný kurz', async () => {
@@ -61,21 +65,27 @@ await check('Výpadek zdroje neodstaví dostupný kurz', async () => {
   assert(result.sources.join(',') === 'BitPay' && result.rates.PYG === 510_000_000, 'Chybí platný zdroj');
 });
 
-await check('Nákup BTC pod trhem a prodej BTC nad trhem', () => {
-  const buy = tradeQuote({marketRate:2_000_000, percent:-2, side:'buy', amount:0.005, amountKind:'bitcoin'});
-  const sell = tradeQuote({marketRate:2_000_000, percent:2, side:'sell', amount:0.005, amountKind:'bitcoin'});
+await check('Jedno procento zvýhodní nákup i prodej BTC', () => {
+  const buy = tradeQuote({marketRate:2_000_000, marginPercent:2, side:'buy', amount:0.005, amountKind:'bitcoin'});
+  const sell = tradeQuote({marketRate:2_000_000, marginPercent:2, side:'sell', amount:0.005, amountKind:'bitcoin'});
   assert(buy.fiat === 9_800 && buy.offeredRate === 1_960_000, 'Výkupní cena');
   assert(sell.fiat === 10_200 && sell.offeredRate === 2_040_000, 'Prodejní cena');
   assert(buy.difference === 200 && sell.difference === 200, 'Rozdíl proti trhu');
   assert(parsePercent('−2,5', 'cs') === -2.5 && parsePercent('+2.5', 'en') === 2.5, 'Procenta');
+  for (const side of ['buy', 'sell']) {
+    const disadvantage = tradeQuote({marketRate:2_000_000, marginPercent:-2, side, amount:0.005, amountKind:'bitcoin'});
+    assert(disadvantage.difference === -200, 'Záporná výhoda');
+    assert(tradeQuote({marketRate:2_000_000, marginPercent:0, side, amount:0.005, amountKind:'bitcoin'}).offeredRate === 2_000_000, 'Nulová výhoda');
+  }
+  assert(parsePercent('100') === null && parsePercent('-100') === null, 'Hranice procent');
 });
 
 await check('Pevná fiat částka a zaokrouhlení na celé satoshi', () => {
-  const buy = tradeQuote({marketRate:2_000_000, percent:-2, side:'buy', amount:10_000});
-  const sell = tradeQuote({marketRate:2_000_000, percent:2, side:'sell', amount:10_000});
+  const buy = tradeQuote({marketRate:2_000_000, marginPercent:2, side:'buy', amount:10_000});
+  const sell = tradeQuote({marketRate:2_000_000, marginPercent:2, side:'sell', amount:10_000});
   assert(buy.sats === 510205 && sell.sats === 490196, 'Zaokrouhlení podle směru');
-  assert(tradeQuote({marketRate:2_000_000, percent:-100, side:'buy', amount:100}) === null, 'Neplatná cena');
-  assert(tradeQuote({marketRate:2_000_000, percent:0, side:'sell', amount:1.5, amountKind:'bitcoin', unit:'SATS'}) === null, 'Zlomek satoshi');
+  assert(tradeQuote({marketRate:2_000_000, marginPercent:100, side:'buy', amount:100}) === null, 'Neplatná cena');
+  assert(tradeQuote({marketRate:2_000_000, marginPercent:0, side:'sell', amount:1.5, amountKind:'bitcoin', unit:'SATS'}) === null, 'Zlomek satoshi');
 });
 
 await check('Cestovní přepočet mezi fiat měnami', () => {
@@ -113,6 +123,9 @@ await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
     assert([...doc.querySelectorAll('.currency-code')].some(code => code.textContent === 'PYG'), 'PYG se nepřidalo');
     doc.querySelector('#tab-trade').click();
     assert(!doc.querySelector('#trade-pane').hidden && doc.querySelector('#convert-pane').hidden, 'Režim směny');
+    const margin = doc.querySelector('#margin-percent');
+    assert(margin?.value === '2' && !doc.querySelector('#buy-percent') && !doc.querySelector('#sell-percent'), 'Jediné pole s výhodou');
+    assert(doc.querySelector('#margin-preview').textContent.includes('below'), 'Vysvětlení nákupní ceny');
     assert(doc.querySelector('#offer-fiat-label').textContent.includes('pay'), 'Směr nákupu BTC');
     const source = doc.querySelector('#market-source');
     source.value = 'manual'; source.dispatchEvent(new Event('change', {bubbles:true}));
@@ -123,7 +136,17 @@ await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
     assert(!Object.hasOwn(JSON.parse(localStorage.getItem(key)), 'manualMarket'), 'Ruční kurz se neukládá');
     doc.querySelector('#dealer-sell').click();
     assert(doc.querySelector('#offer-fiat-label').textContent.includes('receive'), 'Směr prodeje BTC');
-    assert(doc.querySelector('#offer-price').textContent.includes('2,040,000'), 'Samostatná prodejní odchylka');
+    assert(doc.querySelector('#offer-price').textContent.includes('2,040,000'), 'Stejné procento pro opačný směr');
+    assert(doc.querySelector('#margin-preview').textContent.includes('above'), 'Vysvětlení prodejní ceny');
+    margin.value = '-2'; margin.dispatchEvent(new Event('input', {bubbles:true}));
+    assert(doc.querySelector('#offer-price').textContent.includes('1,960,000') && doc.querySelector('#margin-preview').classList.contains('unfavorable'), 'Záporná výhoda');
+    assert(JSON.parse(localStorage.getItem(key)).marginPercent === -2, 'Uložení jediného procenta');
+    margin.value = '2'; margin.dispatchEvent(new Event('input', {bubbles:true}));
+    doc.querySelector('#language-switch').value = 'cs';
+    doc.querySelector('#language-switch').dispatchEvent(new Event('change', {bubbles:true}));
+    assert(doc.querySelector('#margin-preview').textContent.includes('dráž'), 'Český překlad vysvětlení');
+    doc.querySelector('#language-switch').value = 'en';
+    doc.querySelector('#language-switch').dispatchEvent(new Event('change', {bubbles:true}));
     const kind = doc.querySelector('#dealer-amount-kind');
     kind.value = 'bitcoin'; kind.dispatchEvent(new Event('change', {bubbles:true}));
     const unit = doc.querySelector('#dealer-unit');

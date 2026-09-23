@@ -743,25 +743,24 @@ body {
   background:#fff
 }
 
-.margin-pair,.amount-tools,.market-tools { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px }
+.amount-tools,.market-tools { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px }
 .market-tools:not(.manual-active) { grid-template-columns:1fr }
-.margin-field {
+.margin-control {
   display:grid;
-  gap:8px;
-  min-width:0;
-  padding:11px;
-  border:1px solid #e2e9dd;
+  grid-template-columns:minmax(0,1fr) 88px;
+  align-items:center;
+  gap:5px 10px;
+  padding:13px;
+  border:1px solid #cfe1c7;
   border-radius:12px;
-  color:#60796a;
-  font-size:11px;
-  font-weight:750
+  background:#f1f7ed
 }
-
-.margin-field.active { border-color:#a7c99a;background:#f1f7ed;color:#285d38 }
-.percent-wrap { display:flex;align-items:center;gap:3px }
-.percent-wrap input { min-width:0;padding:9px 8px;font-weight:700;font-variant-numeric:tabular-nums }
+.margin-label { color:#285d38;font-size:12px;font-weight:750 }
+.percent-wrap { display:flex;align-items:center;gap:4px;color:#285d38 }
+.percent-wrap input { min-width:0;padding:9px 8px;font-weight:750;font-variant-numeric:tabular-nums;text-align:right }
 .percent-wrap b { font-size:13px }
-.trade-settings>.helper-text { margin:-7px 0 0 }
+.margin-preview { grid-column:1/-1;margin:0;color:#446951;font-size:11px;line-height:1.5 }
+.margin-preview.unfavorable { color:#a44d36 }
 .trade-amount { font-size:22px }
 
 .offer-card {
