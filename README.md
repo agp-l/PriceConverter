@@ -21,16 +21,16 @@ The fiat-to-fiat estimate is derived from the available BTC prices: **target fia
 
 The **Personal trade** tab uses *your* perspective throughout:
 
-| Action | You give | You receive | Default adjustment to the reference BTC price |
+| Action | You give | You receive | With a 2% rate advantage |
 | --- | --- | --- | --- |
-| **I buy BTC** | Fiat | BTC | −2% |
-| **I sell BTC** | BTC | Fiat | +2% |
+| **I buy BTC** | Fiat | BTC | Pay 2% less per BTC |
+| **I sell BTC** | BTC | Fiat | Receive 2% more per BTC |
 
-Set separate, signed percentages for buying and selling. For either direction, **your price for 1 BTC = reference price × (1 + adjustment / 100)**. For example, with a reference price of 2,000,000 CZK/BTC, −2% gives 1,960,000 CZK/BTC and +2% gives 2,040,000 CZK/BTC. These defaults are editable, not recommendations.
+Enter **one percentage** for both directions (2% by default). VexlCalc applies it in your favor: **buy price = reference price × (1 − percentage / 100)**; **sell price = reference price × (1 + percentage / 100)**. For example, at a reference price of 2,000,000 CZK/BTC, 2% means buying at 1,960,000 CZK/BTC or selling at 2,040,000 CZK/BTC. The line below the field explains the current direction. A negative percentage reverses the advantage; 0% uses the reference price. Valid entries are strictly between −100% and 100%.
 
 Choose a fiat currency, enter either a fixed fiat amount or a BTC/SATS amount, and see the amounts exchanged, your price per BTC, and the difference from the reference price. You can use the last downloaded rate or enter your own reference price, including for a currency such as PYG when no automatic rate is available. The manual price lasts only for the current app session and is reset when you change the trade currency.
 
-Trades use whole satoshis. For a fixed fiat amount, BTC is rounded **up when you buy** and **down when you sell**. The displayed difference is an arithmetic comparison with the reference price, **not net profit**; network fees, taxes, and other costs are not included.
+Trades use whole satoshis. For a fixed fiat amount, BTC is rounded **up when you buy** and **down when you sell**. The displayed difference is an arithmetic comparison with the reference price, **not guaranteed earnings or net profit**; network fees, taxes, and other costs are not included.
 
 ## Rates, storage, and offline use
 
@@ -38,7 +38,7 @@ The browser requests BTC-to-fiat rates from [CoinGecko](https://api.coingecko.co
 
 The app shows the age of its last downloaded rates and lets you refresh them. Its service worker caches the app files for offline opening after a successful visit; the last downloaded rates are kept in browser storage. Offline results can be stale. On a first visit without a connection or a saved rate, conversions that need a rate are unavailable.
 
-Settings and cached rates live in your browser's `localStorage` under `priceconverter:v1` (the existing key is retained for compatibility). Saved settings include currencies, display unit, language, mode, trade adjustments, and conversion choices. Entered trade amounts, individual trades, and a manually entered reference price are not saved. The app has no account or server-side trade history; fetching rates sends requests to the named third-party providers.
+Settings and cached rates live in your browser's `localStorage` under `priceconverter:v1` (the existing key is retained for compatibility). Saved settings include currencies, display unit, language, mode, one trade percentage, and conversion choices. An existing pair of buy/sell percentages is migrated using the direction last selected. Entered trade amounts, individual trades, and a manually entered reference price are not saved. The app has no account or server-side trade history; fetching rates sends requests to the named third-party providers.
 
 The interface supports **English and Czech**. **Auto** follows the device language; a manual choice is remembered.
 
