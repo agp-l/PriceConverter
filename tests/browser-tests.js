@@ -51,6 +51,9 @@ await check('Neplatné kurzy a poškozená uložená data', () => {
   const settings = restoreSettings(JSON.stringify({marginPercent:3, mode:'trade', tradeCurrency:'PYG'}));
   assert(settings.marginPercent === 3 && settings.mode === 'trade' && settings.tradeCurrency === 'PYG', 'Nastavení směny');
   assert(restoreSettings('{}').marginPercent === 2, 'Výchozí výhoda');
+  assert(restoreSettings('{}').dealerSide === 'sell', 'Výchozí prodej BTC');
+  assert(restoreSettings('{"dealerSide":"buy"}').dealerSide === 'buy', 'Uložený nákup BTC');
+  assert(restoreSettings('{"dealerSide":"sell"}').dealerSide === 'sell', 'Uložený prodej BTC');
   assert(restoreSettings(JSON.stringify({buyPercent:-3, sellPercent:4})).marginPercent === 3, 'Převod staré nákupní ceny');
   assert(restoreSettings(JSON.stringify({buyPercent:-3, sellPercent:4, dealerSide:'sell'})).marginPercent === 4, 'Převod staré prodejní ceny');
   assert(restoreSettings(JSON.stringify({marginPercent:-2, buyPercent:-3})).marginPercent === -2, 'Nové nastavení má přednost');
@@ -241,6 +244,8 @@ await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
     doc.querySelector('#sort-currencies').click();
     doc.querySelector('#menu-toggle').click();
     assert(doc.querySelector('#app-menu').open && doc.querySelector('#menu-toggle').getAttribute('aria-expanded') === 'true', 'Otevření nabídky');
+    const tabs = [...doc.querySelectorAll('.drawer-nav button')].map(button => button.id);
+    assert(tabs.indexOf('tab-trade') < tabs.indexOf('tab-travel'), 'Osobní směna je nad cestovním převodem');
     assert(doc.querySelector('#app-menu #install-button') && !doc.querySelector('.app-footer'), 'Instalace v menu');
     assert(doc.querySelector('#app-menu a[href="https://github.com/agp-l/PriceConverter"]'), 'Otevřený zdrojový kód');
     doc.querySelector('#donate-button').click();
@@ -268,6 +273,11 @@ await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
     assert(!doc.querySelector('#trade-pane').hidden && doc.querySelector('#convert-pane').hidden, 'Režim směny');
     const margin = doc.querySelector('#margin-percent');
     assert(margin?.value === '2' && !doc.querySelector('#buy-percent') && !doc.querySelector('#sell-percent'), 'Jediné pole s výhodou');
+    assert(doc.querySelector('.trade-side button:first-child').id === 'dealer-sell' &&
+      doc.querySelector('#dealer-sell').getAttribute('aria-pressed') === 'true', 'Prodej je první a výchozí');
+    assert(doc.querySelector('#margin-preview').textContent.includes('above'), 'Vysvětlení výchozí prodejní ceny');
+    assert(doc.querySelector('#offer-fiat-label').textContent.includes('receive'), 'Prodej BTC přijímá fiat');
+    doc.querySelector('#dealer-buy').click();
     assert(doc.querySelector('#margin-preview').textContent.includes('below'), 'Vysvětlení nákupní ceny');
     assert(doc.querySelector('#offer-fiat-label').textContent.includes('pay'), 'Směr nákupu BTC');
     const source = doc.querySelector('#market-source');

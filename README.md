@@ -2,7 +2,7 @@
 
 A pocket-sized Bitcoin trade calculator and travel currency converter. [Open the app](https://convertor.dobrodruzi.cz/).
 
-VexlCalc is a standalone progressive web app built with HTML, CSS, and vanilla JavaScript. It runs in the browser with no account, Node.js, framework, build step, or backend. You can add it to your phone's home screen. The compact mobile layout and side menu work on phones and desktop screens. Use the menu to open **Converter**, **Currency to currency**, **Personal trades**, **BTC chart**, or **Settings**; you can also install the app and change the language there.
+VexlCalc is a standalone progressive web app built with HTML, CSS, and vanilla JavaScript. It runs in the browser with no account, Node.js, framework, build step, or backend. You can add it to your phone's home screen. The compact mobile layout and side menu work on phones and desktop screens. Use the menu to open **Converter**, **Personal trades**, **Currency to currency**, **BTC chart**, or **Settings**; you can also install the app and change the language there.
 
 > VexlCalc is an independent project and is not affiliated with Vexl. It calculates estimates; it does not publish offers, arrange trades, or move money.
 
@@ -26,10 +26,10 @@ The **Personal trades** screen uses *your* perspective throughout:
 
 | Action | You give | You receive | With a 2% rate advantage |
 | --- | --- | --- | --- |
-| **I buy BTC** | Fiat | BTC | Pay 2% less per BTC |
 | **I sell BTC** | BTC | Fiat | Receive 2% more per BTC |
+| **I buy BTC** | Fiat | BTC | Pay 2% less per BTC |
 
-Enter **one percentage** for both directions (2% by default). VexlCalc applies it in your favor: **buy price = reference price × (1 − percentage / 100)**; **sell price = reference price × (1 + percentage / 100)**. For example, at a reference price of 2,000,000 CZK/BTC, 2% means buying at 1,960,000 CZK/BTC or selling at 2,040,000 CZK/BTC. The line below the field explains the current direction. A negative percentage reverses the advantage; 0% uses the reference price. Valid entries are strictly between −100% and 100%.
+Selling BTC is selected on a fresh install; the last selected direction is remembered afterward. Enter **one percentage** for both directions (2% by default). VexlCalc applies it in your favor: **buy price = reference price × (1 − percentage / 100)**; **sell price = reference price × (1 + percentage / 100)**. For example, at a reference price of 2,000,000 CZK/BTC, 2% means buying at 1,960,000 CZK/BTC or selling at 2,040,000 CZK/BTC. The line below the field explains the current direction. A negative percentage reverses the advantage; 0% uses the reference price. Valid entries are strictly between −100% and 100%.
 
 Choose a fiat currency, enter either a fixed fiat amount or a BTC/SATS amount, and see the amounts exchanged, your price per BTC, and the difference from the reference price. You can use the last downloaded rate or enter your own reference price, including for a currency such as PYG when no automatic rate is available. The manual price lasts only for the current app session and is reset when you change the trade currency.
 
