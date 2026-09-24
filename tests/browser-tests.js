@@ -489,9 +489,16 @@ await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
     doc.querySelector('#open-chart').click();
     assert(!doc.querySelector('#chart-pane').hidden && doc.querySelector('#convert-pane').hidden, 'Samostatná obrazovka grafu');
     assert(doc.querySelector('#app').classList.contains('chart-mode'), 'Graf má výšku obrazovky');
+    assert(doc.documentElement.classList.contains('chart-page') &&
+      doc.defaultView.getComputedStyle(doc.documentElement).overflow === 'hidden' &&
+      doc.defaultView.getComputedStyle(doc.querySelector('#large-chart')).minHeight === '0px',
+    'Při ovládání grafu se stránka neposouvá');
     assert(doc.querySelector('#refresh').hidden && doc.querySelector('#rates-status').hidden, 'Graf nemá tlačítko aktualizace kurzů');
     doc.querySelector('#menu-toggle').click();
     doc.querySelector('#tab-settings').click();
+    assert(!doc.documentElement.classList.contains('chart-page') &&
+      doc.defaultView.getComputedStyle(doc.documentElement).overflow !== 'hidden',
+    'Po odchodu z grafu lze stránku znovu posouvat');
     assert(!doc.querySelector('#settings-pane').hidden && doc.querySelector('#screen-title').textContent === 'Settings', 'Obrazovka nastavení');
     const sources = [...doc.querySelectorAll('#rate-source-controls input')];
     assert(sources.length === 3 && sources.every(input => input.checked), 'Tři aktivní zdroje kurzů');

@@ -208,6 +208,7 @@ export class ConverterApp {
     this.currencies = new Map();
     this.installPrompt = null;
     this.sorting = false;
+    this.chartScrollLocked = false;
     this.setFormatters();
     this.tradeFiatRaw = '10000';
     this.tradeBitcoinRaw = stored.unit === 'SATS' ? '1000000' : '0.01';
@@ -437,7 +438,14 @@ export class ConverterApp {
 
   setMode(mode) {
     this.state.mode = ['convert', 'travel', 'trade', 'chart', 'settings'].includes(mode) ? mode : 'convert';
-    this.elements.app.classList.toggle('chart-mode', this.state.mode === 'chart');
+    const chartMode = this.state.mode === 'chart';
+    if (chartMode !== this.chartScrollLocked) {
+      if (chartMode) this.win.scrollTo(0, 0);
+      this.doc.documentElement.classList.toggle('chart-page', chartMode);
+      this.chartScrollLocked = chartMode;
+      if (!chartMode) this.win.scrollTo(0, 0);
+    }
+    this.elements.app.classList.toggle('chart-mode', chartMode);
     for (const [name, pane, button, title] of [
       ['convert', this.elements.paneConvert, this.elements.tabConvert, 'converterTab'],
       ['travel', this.elements.paneTravel, this.elements.tabTravel, 'travelHeading'],
