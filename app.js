@@ -9,11 +9,39 @@ const AUTO_REFRESH_MS = 60 * 60_000;
 const MANUAL_REFRESH_MS = 60_000;
 const DEFAULT_CURRENCIES = ['CZK', 'EUR', 'USD'];
 const CHART_RANGES = ['1M', '3M', '12M', '60M', 'MAX'];
+const FIAT_PRECISIONS = ['auto', '0', '2', '4'];
 const CURRENCY_CODES = new Set(CURRENCIES.map(currency => currency.code));
+const currencyMinorUnits = new Map();
 const isRate = value => typeof value === 'number' && Number.isFinite(value) && value > 0;
 const searchable = value => value.toLocaleLowerCase('cs').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 const savedPercent = (value, fallback) => typeof value === 'number' && Number.isFinite(value) && value > -100 && value < 100 ? value : fallback;
 const savedCurrency = (value, fallback) => CURRENCY_CODES.has(value) ? value : fallback;
+
+function minorUnits(code) {
+  if (!currencyMinorUnits.has(code)) {
+    let digits = 2;
+    try { digits = new Intl.NumberFormat('en', {style:'currency', currency:code}).resolvedOptions().maximumFractionDigits; }
+    catch { /* Unknown currency: use two decimal places. */ }
+    currencyMinorUnits.set(code, digits);
+  }
+  return currencyMinorUnits.get(code);
+}
+
+// Presentation only. Keep calculations and edited source amounts at full precision.
+export function formatConvertedFiat(value, code, language = 'cs', precision = 'auto') {
+  if (value === null || !Number.isFinite(value)) return '';
+  const abs = Math.abs(value);
+  const minor = minorUnits(code);
+  let digits = precision === 'auto'
+    ? code === 'CZK' && abs >= 100 ? 0 : abs >= 1 || abs === 0 ? minor
+      : Math.min(12, Math.max(minor, 2 - Math.floor(Math.log10(abs))))
+    : FIAT_PRECISIONS.includes(precision) ? Number(precision) : 2;
+  // Even in whole-number mode a small, nonzero amount must not look like zero.
+  if (abs > 0 && abs < 0.5 * 10 ** -digits)
+    digits = Math.max(digits, Math.min(12, 2 - Math.floor(Math.log10(abs))));
+  return new Intl.NumberFormat(language === 'cs' ? 'cs-CZ' : 'en-US',
+    {maximumFractionDigits:digits}).format(value);
+}
 
 export function shouldRefreshRates(cache, lastAttempt, now = Date.now(), manual = false) {
   if (Number.isFinite(lastAttempt) && lastAttempt > 0 && now - lastAttempt < (manual ? MANUAL_REFRESH_MS : AUTO_REFRESH_MS)) return false;
@@ -67,6 +95,7 @@ export function restoreSettings(json) {
     mode:['convert', 'travel', 'trade', 'chart', 'settings'].includes(saved.mode) ? saved.mode : 'convert',
     showChartPreview:saved.showChartPreview !== false,
     chartRange:CHART_RANGES.includes(saved.chartRange) ? saved.chartRange : '12M',
+    fiatPrecision:FIAT_PRECISIONS.includes(saved.fiatPrecision) ? saved.fiatPrecision : 'auto',
     tradeCurrency:savedCurrency(saved.tradeCurrency, 'CZK'),
     marginPercent,
     // Earlier releases persisted the default buy side without a user choice.
@@ -103,7 +132,7 @@ export class ConverterApp {
       travelDifference:'travel-difference', travelPercent:'travel-percent',
       travelSourceEquivalent:'travel-source-equivalent', travelOfferError:'travel-offer-error',
       chartPreview:'chart-preview', chartPeriod:'chart-period', chartVisibility:'show-chart-preview',
-      chartPreviewState:'chart-preview-state',
+      chartPreviewState:'chart-preview-state', fiatPrecision:'fiat-precision',
       chartRange:'chart-range', miniChart:'mini-chart', miniChartFallback:'mini-chart-fallback', openChart:'open-chart',
       largeChart:'large-chart',
       largeChartFallback:'large-chart-fallback',
@@ -146,10 +175,10 @@ export class ConverterApp {
   tr(key, parameters) { return t(this.state.language, key, parameters); }
 
   save() {
-    const {selected, unit, cache, languageMode, mode, showChartPreview, chartRange, tradeCurrency, marginPercent,
+    const {selected, unit, cache, languageMode, mode, showChartPreview, chartRange, fiatPrecision, tradeCurrency, marginPercent,
       dealerSide, dealerSideChosen, dealerKind, travelFrom, travelTo} = this.state;
     try { this.win.localStorage.setItem(STORAGE_KEY, JSON.stringify({selected, unit, cache, languageMode,
-      mode, showChartPreview, chartRange, tradeCurrency, marginPercent, dealerSide, dealerSideChosen,
+      mode, showChartPreview, chartRange, fiatPrecision, tradeCurrency, marginPercent, dealerSide, dealerSideChosen,
       dealerKind, travelFrom, travelTo})); }
     catch { /* Conversion remains available without local storage. */ }
   }
@@ -185,7 +214,8 @@ export class ConverterApp {
       input.disabled = !this.hasRate(code);
       input.placeholder = input.disabled ? this.tr('noRate') : '';
       input.title = input.disabled ? this.tr('missingRate', {code}) : '';
-      if (state.anchor !== code) input.value = this.format(fromBtc(state.btc, code, state.cache?.rates || {}), code);
+      if (state.anchor !== code) input.value = formatConvertedFiat(
+        fromBtc(state.btc, code, state.cache?.rates || {}), code, state.language, state.fiatPrecision);
     }
   }
 
@@ -618,6 +648,7 @@ export class ConverterApp {
     this.renderCurrencySelects();
     elements.dealerUnit.value = state.unit;
     elements.dealerKind.value = state.dealerKind;
+    elements.fiatPrecision.value = state.fiatPrecision;
     if (state.anchor === 'BTC') elements.btc.value = state.raw;
     this.renderRows(); this.renderOptions(); this.renderTravel(); this.renderTrade();
     this.syncChartSettings(); this.setMode(state.mode); this.showStatus();
@@ -769,6 +800,11 @@ export class ConverterApp {
     elements.openChart.addEventListener('click', () => {
       this.setMode('chart');
       elements.menuToggle.focus();
+    });
+    elements.fiatPrecision.addEventListener('change', () => {
+      if (!FIAT_PRECISIONS.includes(elements.fiatPrecision.value)) return;
+      this.state.fiatPrecision = elements.fiatPrecision.value;
+      this.save(); this.updateValues();
     });
     elements.chartVisibility.addEventListener('change', () => {
       this.state.showChartPreview = elements.chartVisibility.checked;

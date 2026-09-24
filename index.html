@@ -104,6 +104,10 @@
       </div>
 
       <div id="settings-pane" class="screen-pane" role="region" aria-labelledby="screen-title" hidden>
+        <section class="settings-card" aria-label="Zobrazení částek" data-i18n-aria-label="fiatSettings">
+          <label class="field-label" for="fiat-precision"><span data-i18n="fiatPrecisionLabel">Desetinná místa v Převodníku</span><select id="fiat-precision" class="field-select"><option value="auto" data-i18n="fiatPrecisionAuto">Automaticky (doporučeno)</option><option value="0" data-i18n="fiatPrecisionZero">Celé částky</option><option value="2" data-i18n="fiatPrecisionTwo">Nejvýše 2 desetinná místa</option><option value="4" data-i18n="fiatPrecisionFour">Nejvýše 4 desetinná místa</option></select></label>
+          <p class="settings-hint" data-i18n="fiatPrecisionHint">Automaticky: CZK od 100 zaokrouhlit, jiné měny podle jejich jednotek. Velmi malé částky zůstanou viditelné. Čárka odděluje desetiny, mezera tisíce. Výpočet se nemění.</p>
+        </section>
         <section class="settings-card" aria-label="Nastavení grafu" data-i18n-aria-label="chartSettings">
           <label class="preview-setting" for="show-chart-preview"><span data-i18n="showChartPreview">Zobrazit malý graf v Převodníku</span><span class="switch-control"><input id="show-chart-preview" type="checkbox" role="switch" checked><span class="switch-track" aria-hidden="true"></span><span id="chart-preview-state">Zapnuto</span></span></label>
           <label class="field-label" for="chart-range"><span data-i18n="chartRangeLabel">Období grafu</span><select id="chart-range" class="field-select"><option value="1M" data-i18n="chartMonth">1 měsíc</option><option value="3M" data-i18n="chartQuarter">3 měsíce</option><option value="12M" data-i18n="chartYear">1 rok</option><option value="60M" data-i18n="chartFiveYears">5 let</option><option value="MAX" data-i18n="chartMax">MAX</option></select></label>

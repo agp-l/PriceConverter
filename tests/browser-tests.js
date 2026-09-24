@@ -1,7 +1,7 @@
 import {detectLanguage, resolveLanguage, t} from '../i18n.js';
 import {getCurrencies} from '../currencies.js';
 import {averageRates, parseAmount, btcFrom, fromBtc, fetchRates} from '../rates.js';
-import {restoreSettings, ConverterApp, formatTradeOffer, shouldRefreshRates} from '../app.js';
+import {restoreSettings, ConverterApp, formatConvertedFiat, formatTradeOffer, shouldRefreshRates} from '../app.js';
 import {parsePercent, tradeQuote, travelQuote, compareTravelOffer} from '../quotes.js';
 
 const results = document.querySelector('#results');
@@ -41,6 +41,23 @@ await check('Převody BTC, SATS a desetinné zápisy', () => {
   assert(parseAmount('1,2,3') === null, 'Neplatný zápis');
 });
 
+await check('Přehledné měny bez ztráty drobných částek', () => {
+  assert(formatConvertedFiat(179.51, 'CZK') === '180', 'Běžná částka bez haléřů');
+  assert(formatConvertedFiat(3.5, 'CZK') === '3,5', 'Malá cena se zbytkem koruny');
+  assert(formatConvertedFiat(179.51, 'CZK', 'cs', '2') === '179,51', 'Přesnější režim');
+  assert(formatConvertedFiat(179.51, 'EUR') === '179,51', 'Ostatní měny neztrácejí významné desetiny');
+  assert(formatConvertedFiat(179.5123, 'KWD') === '179,512', 'Velká částka v měně se třemi podjednotkami');
+  assert(formatConvertedFiat(0.004, 'CZK', 'cs', '0') === '0,004', 'Nenulová částka nezmizí při zaokrouhlení');
+  assert(formatConvertedFiat(25.6, 'JPY') === '26', 'Měna bez menších jednotek');
+  assert(formatConvertedFiat(1.2356, 'KWD') === '1,236', 'Měna se třemi desetinnými místy');
+  assert(formatConvertedFiat(1234.56, 'CZK', 'en', '2') === '1,234.56', 'Anglické oddělovače');
+  const input = {dataset:{code:'CZK'},disabled:false};
+  const app = {state:{anchor:'BTC',btc:179.51 / 2_000_000,cache:{rates:{CZK:2_000_000}},language:'cs',fiatPrecision:'auto'},
+    elements:{list:{querySelectorAll:() => [input]}},hasRate:() => true,tr:() => ''};
+  ConverterApp.prototype.updateValues.call(app);
+  assert(input.value === '180' && app.state.btc === 179.51 / 2_000_000, 'Zaokrouhlení nemění výpočet');
+});
+
 await check('Neplatné kurzy a poškozená uložená data', () => {
   const rates = averageRates([{CZK:100, USD:Infinity}, {CZK:200, BTC:1}]);
   assert(Math.abs(rates.CZK - 133.333333333) < 0.001, 'Průměr kurzů');
@@ -64,6 +81,9 @@ await check('Neplatné kurzy a poškozená uložená data', () => {
   assert(chartSettings.mode === 'chart' && !chartSettings.showChartPreview && chartSettings.chartRange === '3M', 'Uložený graf');
   assert(restoreSettings('{"chartRange":"60M"}').chartRange === '60M', 'Pětiletý rozsah');
   assert(restoreSettings('{"chartRange":"MAX"}').chartRange === 'MAX', 'Rozsah MAX');
+  assert(restoreSettings('{}').fiatPrecision === 'auto' &&
+    restoreSettings('{"fiatPrecision":"4"}').fiatPrecision === '4' &&
+    restoreSettings('{"fiatPrecision":"bad"}').fiatPrecision === 'auto', 'Přesnost měn a obnova nastavení');
   const invalidChart = restoreSettings(JSON.stringify({mode:'other',showChartPreview:'false',chartRange:'0D'}));
   assert(invalidChart.mode === 'convert' && invalidChart.showChartPreview && invalidChart.chartRange === '12M', 'Neplatné nastavení grafu');
 });
@@ -346,6 +366,11 @@ await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
     doc.querySelector('#menu-toggle').click();
     doc.querySelector('#tab-settings').click();
     assert(!doc.querySelector('#settings-pane').hidden && doc.querySelector('#screen-title').textContent === 'Settings', 'Obrazovka nastavení');
+    const precision = doc.querySelector('#fiat-precision');
+    assert(precision.value === 'auto', 'Výchozí automatická přesnost');
+    precision.value = '2'; precision.dispatchEvent(new Event('change', {bubbles:true}));
+    assert(JSON.parse(localStorage.getItem(key)).fiatPrecision === '2', 'Přesnost se ukládá');
+    precision.value = 'auto'; precision.dispatchEvent(new Event('change', {bubbles:true}));
     const visibility = doc.querySelector('#show-chart-preview');
     assert(visibility.getAttribute('role') === 'switch' &&
       visibility.parentElement.querySelector('.switch-track') &&
