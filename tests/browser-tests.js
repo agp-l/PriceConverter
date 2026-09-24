@@ -1,6 +1,6 @@
 import {detectLanguage, resolveLanguage, t} from '../i18n.js';
 import {getCurrencies} from '../currencies.js';
-import {averageRates, parseAmount, btcFrom, fromBtc, fetchRates} from '../rates.js';
+import {averageRates, checkedRates, parseAmount, btcFrom, fromBtc, fetchRates} from '../rates.js';
 import {restoreSettings, ConverterApp, formatConvertedFiat, formatTradeOffer, shouldRefreshRates} from '../app.js';
 import {parsePercent, tradeQuote, travelQuote, compareTravelOffer} from '../quotes.js';
 
@@ -100,6 +100,46 @@ await check('Výpadek zdroje neodstaví dostupný kurz', async () => {
   };
   const result = await fetchRates(fakeFetch);
   assert(result.sources.join(',') === 'BitPay' && result.rates.PYG === 510_000_000, 'Chybí platný zdroj');
+});
+
+await check('Odlehlý kurz se vyřadí jen pro danou měnu', () => {
+  const checked = checkedRates([
+    {name:'CoinGecko', rates:{CZK:2_000_000, EUR:80_000}},
+    {name:'BitPay', rates:{CZK:2_010_000, EUR:80_100}},
+    {name:'Blockchain.info', rates:{CZK:20_000_000, PYG:510_000_000}}
+  ]);
+  assert(checked.rates.CZK > 2_000_000 && checked.rates.CZK < 2_010_000, 'Chybný kurz nesmí ovlivnit CZK');
+  assert(checked.rates.PYG === 510_000_000 && checked.sources.length === 3, 'Jiná měna téhož zdroje zůstává');
+  assert(checked.excluded.length === 1 && checked.excluded[0].source === 'Blockchain.info' &&
+    checked.excluded[0].code === 'CZK', 'Příčina vyřazení je dohledatelná');
+  assert(!checked.conflicts.length, 'Shoda dvou zdrojů stačí');
+});
+
+await check('Rozpor dvou zdrojů nevytvoří falešně přesný kurz', () => {
+  const checked = checkedRates([
+    {name:'CoinGecko', rates:{CZK:2_000_000, EUR:80_000}},
+    {name:'BitPay', rates:{CZK:3_000_000, EUR:80_100}}
+  ]);
+  assert(!('CZK' in checked.rates) && checked.conflicts.join(',') === 'CZK', 'Bez většiny se CZK nezobrazuje');
+  assert(checked.rates.EUR > 80_000 && checked.rates.EUR < 80_100, 'Ostatní kurzy fungují dál');
+  const noMajority = checkedRates([
+    {name:'A', rates:{CZK:100}}, {name:'B', rates:{CZK:150}}, {name:'C', rates:{CZK:250}}
+  ]);
+  assert(!('CZK' in noMajority.rates) && noMajority.conflicts[0] === 'CZK', 'Tři rozporné zdroje nejsou konsenzus');
+});
+
+await check('Zdroj s odchylkou dostane při dalším načtení novou šanci', async () => {
+  let corrected = false;
+  const fakeFetch = async url => ({ok:true, json:async () => url.includes('coingecko')
+    ? {rates:{czk:{value:2_000_000}}}
+    : url.includes('bitpay') ? {data:[{code:'CZK', rate:2_010_000}]}
+      : {CZK:{last:corrected ? 2_005_000 : 20_000_000}}});
+  const first = await fetchRates(fakeFetch);
+  assert(first.excluded.length === 1 && first.sources.length === 2, 'Odlehlá odpověď je vyřazena');
+  corrected = true;
+  const next = await fetchRates(fakeFetch);
+  assert(next.sources.length === 3 && next.excluded.length === 0 && next.rates.CZK > 2_000_000,
+    'Opravený zdroj je znovu použit');
 });
 
 await check('Vybrané zdroje nepoptávají ostatní poskytovatele', async () => {

@@ -1,10 +1,11 @@
-// Each provider reports fiat units for one BTC. We average the inverse, as the
-// Android Price Converter does, so each available provider has equal weight.
+// Each provider reports fiat units for one BTC. After rejecting outliers we
+// average the inverse, so each available provider has equal weight.
 import {CURRENCIES} from './currencies.js';
 export {CURRENCIES} from './currencies.js';
 
 const allowed = new Set(CURRENCIES.map(currency => currency.code));
 const validRate = value => typeof value === 'number' && Number.isFinite(value) && value > 0;
+const MAX_RATE_DEVIATION = 0.05;
 
 export function parseAmount(input, language = 'cs') {
   let cleaned = String(input).trim().replace(/[\s\u00a0\u202f]/g, '');
@@ -46,6 +47,49 @@ export function averageRates(results) {
   ).filter(([, rate]) => validRate(rate)));
 }
 
+// Compare each currency separately. With two disagreeing sources there is no
+// majority, so do not publish a new rate for that currency. Never alter the
+// user's provider selection: every source gets another chance on next refresh.
+export function checkedRates(results) {
+  const byCurrency = new Map();
+  for (const {name, rates} of results) {
+    for (const [rawCode, value] of Object.entries(rates)) {
+      const code = rawCode.toUpperCase();
+      if (!allowed.has(code) || !validRate(value) || !validRate(1 / value)) continue;
+      if (!byCurrency.has(code)) byCurrency.set(code, []);
+      byCurrency.get(code).push({name, value});
+    }
+  }
+  const accepted = new Map(results.map(({name}) => [name, {}]));
+  const excluded = [];
+  const conflicts = [];
+  for (const [code, quotes] of byCurrency) {
+    if (quotes.length === 2) {
+      const [first, second] = quotes;
+      const middle = first.value + (second.value - first.value) / 2;
+      if (Math.abs(first.value - second.value) / middle > MAX_RATE_DEVIATION) {
+        conflicts.push(code);
+        continue;
+      }
+    }
+    const sorted = quotes.map(quote => quote.value).sort((a, b) => a - b);
+    const median = sorted[Math.floor(sorted.length / 2)];
+    const remaining = quotes.length >= 3
+      ? quotes.filter(quote => Math.abs(quote.value - median) / median <= MAX_RATE_DEVIATION) : quotes;
+    if (quotes.length >= 3 && remaining.length < 2) {
+      conflicts.push(code);
+      continue;
+    }
+    for (const quote of quotes) {
+      if (remaining.includes(quote)) accepted.get(quote.name)[code] = quote.value;
+      else excluded.push({source:quote.name, code});
+    }
+  }
+  const contributors = results.filter(({name}) => Object.keys(accepted.get(name)).length);
+  return {rates:averageRates(contributors.map(({name}) => accepted.get(name))),
+    sources:contributors.map(({name}) => name), excluded, conflicts};
+}
+
 export const SOURCES = [
   {name:'CoinGecko',url:'https://api.coingecko.com/api/v3/exchange_rates',parse:data => Object.fromEntries(Object.entries(data.rates || {}).map(([code, item]) => [code, item.value]))},
   {name:'BitPay',url:'https://bitpay.com/rates/BTC',parse:data => Object.fromEntries((data.data || []).map(item => [item.code, item.rate]))},
@@ -67,7 +111,8 @@ export async function fetchRates(fetchImpl = fetch, selectedSources = SOURCES.ma
     } finally { clearTimeout(timer); }
   }));
   const successful = settled.filter(result => result.status === 'fulfilled').map(result => result.value);
-  const rates = averageRates(successful.map(result => result.rates));
+  const {rates, sources, excluded, conflicts} = checkedRates(successful);
   if (!Object.keys(rates).length) throw new Error('Kurzy nelze načíst');
-  return {rates, sources:successful.map(result => result.name), selectedSources:selection.map(source => source.name), updatedAt:Date.now()};
+  return {rates, sources, excluded, conflicts,
+    selectedSources:selection.map(source => source.name), updatedAt:Date.now()};
 }
