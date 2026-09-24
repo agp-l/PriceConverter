@@ -1,7 +1,7 @@
 import {SUPPORTED_LANGUAGES, messages, detectLanguage, resolveLanguage, localeFor, sourceCount, t} from '../i18n.js';
 import {getCurrencies} from '../currencies.js';
 import {averageRates, checkedRates, parseAmount, btcFrom, fromBtc, fetchRates} from '../rates.js';
-import {restoreSettings, ConverterApp, formatConvertedFiat, formatTradeOffer, shouldRefreshRates} from '../app.js';
+import {restoreSettings, ConverterApp, formatConvertedFiat, formatTradeOffer, shouldRefreshRates, groupTypedAmount} from '../app.js';
 import {parsePercent, tradeQuote, travelQuote, compareTravelOffer} from '../quotes.js';
 
 const results = document.querySelector('#results');
@@ -58,6 +58,14 @@ await check('Převody BTC, SATS a desetinné zápisy', () => {
   assert(parseAmount('1.234,50', 'es') === 1234.5 && parseAmount('1.234', 'de') === 1234, 'Španělské a německé oddělovače');
   assert(parseAmount('1 234,50', 'pl') === 1234.5 && parseAmount('0.00000001', 'es') === 0.00000001, 'Polské částky a BTC s tečkou');
   assert(parseAmount('1,2,3') === null, 'Neplatný zápis');
+});
+
+await check('Čitelné zadávání velkých částek bez ztráty přesnosti', () => {
+  assert(groupTypedAmount('50000000').replace(/\u00a0/g, ' ') === '50 000 000', 'Velká částka PYG');
+  assert(groupTypedAmount('12345,60').replace(/\u00a0/g, ' ') === '12 345,60', 'Desetinná místa zůstávají');
+  assert(groupTypedAmount('0.00000001') === '0.00000001', 'Přesnost BTC');
+  assert(groupTypedAmount('abc') === 'abc', 'Neúplný nebo chybný zápis se nemění');
+  assert(parseAmount(groupTypedAmount('50000000'), 'sk') === 50_000_000, 'Převod bere nezměněnou hodnotu');
 });
 
 await check('Přehledné měny bez ztráty drobných částek', () => {
@@ -422,6 +430,17 @@ await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
     doc.querySelector('#menu-toggle').click();
     doc.querySelector('#tab-trade').click();
     assert(!doc.querySelector('#trade-pane').hidden && doc.querySelector('#convert-pane').hidden, 'Režim směny');
+    const amountInput = doc.querySelector('#dealer-amount');
+    amountInput.value = '50000000'; amountInput.setSelectionRange(8, 8);
+    amountInput.dispatchEvent(new Event('input', {bubbles:true}));
+    assert(amountInput.value.replace(/\u00a0/g, ' ') === '50 000 000' &&
+      amountInput.selectionStart === amountInput.value.length, 'Oddělování tisíců při psaní');
+    amountInput.focus();
+    const done = new doc.defaultView.KeyboardEvent('keydown', {key:'Enter', bubbles:true, cancelable:true});
+    amountInput.dispatchEvent(done);
+    assert(done.defaultPrevented && doc.activeElement !== amountInput && amountInput.getAttribute('enterkeyhint') === 'done',
+      'Potvrzení na mobilní klávesnici ukončí úpravu');
+    amountInput.value = '10000'; amountInput.dispatchEvent(new Event('input', {bubbles:true}));
     const margin = doc.querySelector('#margin-percent');
     assert(margin?.value === '2' && !doc.querySelector('#buy-percent') && !doc.querySelector('#sell-percent'), 'Jediné pole s výhodou');
     assert(doc.querySelector('.trade-side button:first-child').id === 'dealer-sell' &&
