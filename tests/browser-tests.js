@@ -336,6 +336,8 @@ await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
     doc.querySelector('#menu-toggle').click();
     doc.querySelector('#tab-convert').click();
     assert(!doc.querySelector('#convert-pane').hidden && doc.querySelector('#travel-pane').hidden, 'Návrat do převodníku');
+    assert(doc.querySelector('#add-currency').compareDocumentPosition(doc.querySelector('#chart-preview')) & Node.DOCUMENT_POSITION_FOLLOWING,
+      'Malý graf následuje až za tlačítkem pro přidání měny');
     assert(doc.querySelector('.chart-preview') && doc.querySelector('.chart-preview').textContent.includes('1 year'), 'Roční náhled grafu');
     doc.querySelector('#open-chart').click();
     assert(!doc.querySelector('#chart-pane').hidden && doc.querySelector('#convert-pane').hidden, 'Samostatná obrazovka grafu');
