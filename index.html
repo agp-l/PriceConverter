@@ -110,8 +110,9 @@
         </section>
         <section class="settings-card sources-card" aria-label="Zdroje kurzů" data-i18n-aria-label="rateSourcesTitle">
           <fieldset id="rate-source-controls" class="source-controls"><legend data-i18n="rateSourcesTitle">Zdroje kurzů</legend></fieldset>
-          <p class="settings-hint" data-i18n="rateSourcesHint">Vyberte alespoň jeden zdroj. Je-li dostupných více kurzů, aplikace je zprůměruje.</p>
+          <p class="settings-hint" data-i18n="rateSourcesHint">Vyberte alespoň jeden zdroj. Kurz odlišný o více než 5 % se při výpočtu vynechá.</p>
           <p id="source-last" class="source-last"></p>
+          <p id="rate-warnings" class="rate-warnings" role="status" aria-live="polite" hidden></p>
           <p id="source-selection-status" class="settings-hint" role="status" aria-live="polite"></p>
           <button id="settings-refresh" type="button" class="sources-refresh" data-i18n="refresh">Aktualizovat kurzy</button>
         </section>

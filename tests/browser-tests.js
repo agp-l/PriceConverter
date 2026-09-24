@@ -89,6 +89,9 @@ await check('Neplatné kurzy a poškozená uložená data', () => {
   assert(restoreSettings('{"rateSources":[]}').rateSources.length === 3, 'Nelze načíst prázdný výběr');
   const cache = {rates:{CZK:2_000_000}, sources:['BitPay'], selectedSources:['BitPay'], updatedAt:Date.now()};
   assert(restoreSettings(JSON.stringify({rateSources:['BitPay'],cache})).cache.selectedSources.join(',') === 'BitPay', 'Původ posledního kurzu');
+  const warnings = restoreSettings(JSON.stringify({cache:{...cache,
+    excluded:[{source:'BitPay',code:'CZK'},{source:'Unknown',code:'EUR'}],conflicts:['PYG','INVALID']}})).cache;
+  assert(warnings.excluded.length === 1 && warnings.conflicts.join(',') === 'PYG', 'Bezpečná obnova diagnostiky');
   const invalidChart = restoreSettings(JSON.stringify({mode:'other',showChartPreview:'false',chartRange:'0D'}));
   assert(invalidChart.mode === 'convert' && invalidChart.showChartPreview && invalidChart.chartRange === '12M', 'Neplatné nastavení grafu');
 });
@@ -140,6 +143,22 @@ await check('Zdroj s odchylkou dostane při dalším načtení novou šanci', as
   const next = await fetchRates(fakeFetch);
   assert(next.sources.length === 3 && next.excluded.length === 0 && next.rates.CZK > 2_000_000,
     'Opravený zdroj je znovu použit');
+});
+
+await check('Nastavení ukazuje vynechané a rozporné kurzy', () => {
+  const controls = ['CoinGecko','BitPay','Blockchain.info'].map(value => ({value}));
+  const warnings = {textContent:'', hidden:true};
+  const app = {state:{language:'en', rateSources:['CoinGecko','BitPay','Blockchain.info'],
+    cache:{sources:['CoinGecko','BitPay'], selectedSources:['CoinGecko','BitPay','Blockchain.info'],
+      excluded:[{source:'Blockchain.info',code:'CZK'}], conflicts:['PYG']}},
+  elements:{rateSourceControls:{querySelectorAll:() => controls},sourceLast:{textContent:''},
+    sourceSelectionStatus:{textContent:''},rateWarnings:warnings},tr:(key,params) => t('en',key,params)};
+  ConverterApp.prototype.syncSourceSettings.call(app);
+  assert(!warnings.hidden && warnings.textContent.includes('Blockchain.info (CZK)') &&
+    warnings.textContent.includes('PYG'), 'Přehled kontroly se ukáže');
+  app.state.cache = {...app.state.cache, excluded:[], conflicts:[]};
+  ConverterApp.prototype.syncSourceSettings.call(app);
+  assert(warnings.hidden, 'Bez odchylek zůstává obrazovka klidná');
 });
 
 await check('Vybrané zdroje nepoptávají ostatní poskytovatele', async () => {

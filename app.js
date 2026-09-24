@@ -93,8 +93,13 @@ export function restoreSettings(json) {
     if (Object.keys(rates).length && sources.length) {
       const selectedSources = Array.isArray(storedCache.selectedSources)
         ? RATE_SOURCE_NAMES.filter(name => storedCache.selectedSources.includes(name)) : RATE_SOURCE_NAMES.slice();
+      const excluded = Array.isArray(storedCache.excluded) ? storedCache.excluded.filter(item =>
+        item && RATE_SOURCE_NAMES.includes(item.source) && CURRENCY_CODES.has(item.code)) : [];
+      const conflicts = Array.isArray(storedCache.conflicts)
+        ? [...new Set(storedCache.conflicts.filter(code => CURRENCY_CODES.has(code)))] : [];
       cache = {rates, sources, selectedSources:selectedSources.length ? selectedSources : RATE_SOURCE_NAMES.slice(),
-        updatedAt:storedCache.updatedAt};
+        excluded:excluded.slice(0, CURRENCIES.length * RATE_SOURCE_NAMES.length),
+        conflicts:conflicts.slice(0, CURRENCIES.length), updatedAt:storedCache.updatedAt};
     }
   }
   // Older versions saved signed buy/sell adjustments. Keep the active side's
@@ -145,7 +150,7 @@ export class ConverterApp {
       chartPreview:'chart-preview', chartPeriod:'chart-period', chartVisibility:'show-chart-preview',
       chartPreviewState:'chart-preview-state', fiatPrecision:'fiat-precision',
       rateSourceControls:'rate-source-controls', sourceLast:'source-last',
-      sourceSelectionStatus:'source-selection-status', settingsRefresh:'settings-refresh',
+      sourceSelectionStatus:'source-selection-status', rateWarnings:'rate-warnings', settingsRefresh:'settings-refresh',
       chartRange:'chart-range', miniChart:'mini-chart', miniChartFallback:'mini-chart-fallback', openChart:'open-chart',
       largeChart:'large-chart',
       largeChartFallback:'large-chart-fallback',
@@ -382,6 +387,15 @@ export class ConverterApp {
     elements.sourceSelectionStatus.textContent = state.cache &&
       !sameSources(state.cache.selectedSources || RATE_SOURCE_NAMES, state.rateSources)
       ? this.tr('sourcesPending') : this.tr('sourcesNextRefresh');
+    const excluded = state.cache?.excluded || [];
+    const conflicts = state.cache?.conflicts || [];
+    const details = excluded.slice(0, 4).map(item => `${item.source} (${item.code})`).join(', ');
+    const codes = conflicts.slice(0, 6).join(', ');
+    elements.rateWarnings.textContent = [
+      excluded.length ? this.tr('sourcesExcluded', {details:`${details}${excluded.length > 4 ? ` … +${excluded.length - 4}` : ''}`}) : '',
+      conflicts.length ? this.tr('sourcesConflict', {codes:`${codes}${conflicts.length > 6 ? ` … +${conflicts.length - 6}` : ''}`}) : ''
+    ].filter(Boolean).join(' ');
+    elements.rateWarnings.hidden = !excluded.length && !conflicts.length;
   }
 
   resetChart(container) {
