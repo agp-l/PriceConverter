@@ -1,6 +1,6 @@
 import {parseAmount, btcFrom, fromBtc, fetchRates, SOURCES} from './rates.js';
 import {CURRENCIES, getCurrencies} from './currencies.js';
-import {resolveLanguage, t, ageText, sourceCount} from './i18n.js';
+import {SUPPORTED_LANGUAGES, resolveLanguage, t, ageText, sourceCount} from './i18n.js';
 import {parsePercent, tradeQuote, travelQuote, compareTravelOffer} from './quotes.js';
 
 const STORAGE_KEY = 'priceconverter:v1';
@@ -107,7 +107,7 @@ export function restoreSettings(json) {
   const legacyMargin = saved.dealerSide === 'sell' ? saved.sellPercent : -saved.buyPercent;
   const marginPercent = savedPercent(saved.marginPercent, savedPercent(legacyMargin, 2));
   return {selected, rateSources, unit:saved.unit === 'SATS' ? 'SATS' : 'BTC', cache,
-    languageMode:['cs', 'en'].includes(saved.languageMode) ? saved.languageMode : 'auto',
+    languageMode:SUPPORTED_LANGUAGES.includes(saved.languageMode) ? saved.languageMode : 'auto',
     mode:['convert', 'travel', 'trade', 'chart', 'settings'].includes(saved.mode) ? saved.mode : 'convert',
     showChartPreview:saved.showChartPreview !== false,
     chartRange:CHART_RANGES.includes(saved.chartRange) ? saved.chartRange : '12M',
