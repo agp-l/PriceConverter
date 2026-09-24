@@ -18,18 +18,44 @@ const isRate = value => typeof value === 'number' && Number.isFinite(value) && v
 const searchable = value => value.toLocaleLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
   .replace(/ł/g, 'l').replace(/ø/g, 'o').replace(/ß/g, 'ss');
 
-// Keep user-entered decimals and exact large integers; group only the whole-number part.
-export function groupTypedAmount(raw) {
-  const match = /^(\d[\d\s\u00a0\u202f]*)([,.]\d*)?$/.exec(raw);
-  if (!match) return raw;
-  const integer = match[1].replace(/[\s\u00a0\u202f]/g, '');
+const lastFormattedAmount = new WeakMap();
+
+// Format exact typed digits without rounding; retain an unfinished decimal separator.
+export function groupTypedAmount(raw, language = 'cs', previous = '') {
+  const locale = localeFor(language);
+  const formatter = new Intl.NumberFormat(locale, {maximumFractionDigits:0});
+  const parts = new Intl.NumberFormat(locale).formatToParts(12345.6);
+  const group = parts.find(part => part.type === 'group')?.value;
+  const decimal = parts.find(part => part.type === 'decimal')?.value;
+  const compact = raw.replace(/[\s\u00a0\u202f]/g, '');
+  let integer;
+  let fraction = '';
+  if (group === ',' || group === '.') {
+    const separator = group === '.' ? '\\.' : ',';
+    const decimalSeparator = decimal === '.' ? '\\.' : ',';
+    const complete = new RegExp(`^(\\d{1,3}(?:${separator}\\d{3})+)(${decimalSeparator}\\d*)?$`);
+    const partial = new RegExp(`^(\\d{1,3}(?:${separator}\\d{3})*${separator}\\d+)(${decimalSeparator}\\d*)?$`);
+    const grouped = complete.exec(compact) ||
+      (complete.test(previous) && partial.exec(compact));
+    if (grouped && grouped[1][0] !== '0') {
+      integer = grouped[1].split(group).join('');
+      fraction = grouped[2] || '';
+    }
+  }
+  if (integer === undefined) {
+    const plain = /^(\d+)([,.]\d*)?$/.exec(compact);
+    if (!plain) return raw;
+    integer = plain[1];
+    fraction = plain[2] || '';
+  }
   if (integer.length > 1 && integer.startsWith('0')) return raw;
-  return integer.replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0') + (match[2] || '');
+  return formatter.format(BigInt(integer)) + (fraction ? decimal + fraction.slice(1) : '');
 }
 
-function groupAmountInput(input) {
+function groupAmountInput(input, language) {
   const raw = input.value;
-  const grouped = groupTypedAmount(raw);
+  const grouped = groupTypedAmount(raw, language, lastFormattedAmount.get(input));
+  lastFormattedAmount.set(input, grouped);
   if (grouped === raw) return;
   const caret = input.selectionStart;
   const before = caret === null ? null : raw.slice(0, caret).replace(/[\s\u00a0\u202f]/g, '').length;
@@ -85,9 +111,10 @@ export function formatTradeOffer(quote, {currency, unit = 'BTC', language = 'cs'
   generatedAt = new Date(), referenceUpdatedAt = null} = {}) {
   const locale = localeFor(language);
   const number = new Intl.NumberFormat(locale, {maximumFractionDigits:8});
+  const bitcoin = new Intl.NumberFormat(locale, {minimumFractionDigits:8, maximumFractionDigits:8});
   const btc = unit === 'SATS'
-    ? `${number.format(quote.sats)} sats (${quote.btc.toFixed(8)} BTC)`
-    : `${quote.btc.toFixed(8)} BTC`;
+    ? `${number.format(quote.sats)} sats (${bitcoin.format(quote.btc)} BTC)`
+    : `${bitcoin.format(quote.btc)} BTC`;
   const fiat = `${number.format(quote.fiat)} ${currency}`;
   const price = `${number.format(quote.offeredRate)} ${currency}`;
   const lines = [t(language, 'shareTradeTitle'),
@@ -301,10 +328,10 @@ export class ConverterApp {
       const input = this.doc.createElement('input'); input.type = 'text'; input.inputMode = 'decimal'; input.setAttribute('enterkeyhint', 'done'); input.autocomplete = 'off'; input.spellcheck = false;
       input.dataset.code = code; input.setAttribute('aria-label', this.tr('amountIn', {name:currency.name}));
       input.addEventListener('input', event => {
-        if (!event.isComposing) groupAmountInput(input);
+        if (!event.isComposing) groupAmountInput(input, this.state.language);
         this.recalculate(code, input.value);
       });
-      input.addEventListener('focus', () => input.select());
+      input.addEventListener('focus', () => { lastFormattedAmount.set(input, input.value); input.select(); });
       value.append(input);
       const remove = this.doc.createElement('button'); remove.type = 'button'; remove.className = 'remove-button'; remove.textContent = '×';
       remove.title = this.tr('remove', {name:currency.name}); remove.setAttribute('aria-label', remove.title);
@@ -855,9 +882,11 @@ export class ConverterApp {
     elements.btc.value = this.state.raw;
     const percentFormatter = new Intl.NumberFormat(localeFor(this.state.language), {maximumFractionDigits:4, useGrouping:false});
     elements.marginPercent.value = percentFormatter.format(this.state.marginPercent);
-    this.tradeFiatRaw = groupTypedAmount(this.tradeFiatRaw);
-    if (this.state.unit === 'SATS') this.tradeBitcoinRaw = groupTypedAmount(this.tradeBitcoinRaw);
+    this.tradeFiatRaw = groupTypedAmount(this.tradeFiatRaw, this.state.language);
+    this.tradeBitcoinRaw = groupTypedAmount(this.tradeBitcoinRaw, this.state.language);
     elements.dealerAmount.value = this.state.dealerKind === 'fiat' ? this.tradeFiatRaw : this.tradeBitcoinRaw;
+    for (const input of this.doc.querySelectorAll('input[inputmode="decimal"]'))
+      input.addEventListener('focus', () => lastFormattedAmount.set(input, input.value));
     const finishNumericEntry = event => {
       if (event.isComposing || !(event.target instanceof win.HTMLInputElement) || event.target.inputMode !== 'decimal') return;
       if (event.type === 'keydown' ? event.key !== 'Enter' && event.keyCode !== 13 : event.inputType !== 'insertLineBreak') return;
@@ -866,7 +895,10 @@ export class ConverterApp {
     };
     this.doc.addEventListener('keydown', finishNumericEntry);
     this.doc.addEventListener('beforeinput', finishNumericEntry);
-    elements.btc.addEventListener('input', () => this.recalculate('BTC', elements.btc.value));
+    elements.btc.addEventListener('input', event => {
+      if (!event.isComposing) groupAmountInput(elements.btc, this.state.language);
+      this.recalculate('BTC', elements.btc.value);
+    });
     elements.btc.addEventListener('focus', () => elements.btc.select());
     elements.menuToggle.addEventListener('click', () => {
       elements.menu.showModal();
@@ -895,7 +927,7 @@ export class ConverterApp {
       });
     }
     elements.travelAmount.addEventListener('input', event => {
-      if (!event.isComposing) groupAmountInput(elements.travelAmount);
+      if (!event.isComposing) groupAmountInput(elements.travelAmount, this.state.language);
       this.renderTravel();
     });
     const clearTravelOffer = () => { elements.travelOfferRate.value = ''; elements.travelFee.value = ''; };
@@ -909,11 +941,11 @@ export class ConverterApp {
     });
     elements.travelOfferBasis.addEventListener('change', () => { elements.travelOfferRate.value = ''; this.renderTravel(); });
     elements.travelOfferRate.addEventListener('input', event => {
-      if (!event.isComposing) groupAmountInput(elements.travelOfferRate);
+      if (!event.isComposing) groupAmountInput(elements.travelOfferRate, this.state.language);
       this.renderTravel();
     });
     elements.travelFee.addEventListener('input', event => {
-      if (!event.isComposing) groupAmountInput(elements.travelFee);
+      if (!event.isComposing) groupAmountInput(elements.travelFee, this.state.language);
       this.renderTravel();
     });
     elements.openChart.addEventListener('click', () => {
@@ -958,7 +990,7 @@ export class ConverterApp {
       this.renderTrade();
     });
     elements.manualMarket.addEventListener('input', event => {
-      if (!event.isComposing) groupAmountInput(elements.manualMarket);
+      if (!event.isComposing) groupAmountInput(elements.manualMarket, this.state.language);
       this.renderTrade();
     });
     elements.marginPercent.addEventListener('input', () => {
@@ -967,8 +999,7 @@ export class ConverterApp {
       this.renderTrade();
     });
     elements.dealerAmount.addEventListener('input', event => {
-      if (!event.isComposing && (this.state.dealerKind === 'fiat' || this.state.unit === 'SATS'))
-        groupAmountInput(elements.dealerAmount);
+      if (!event.isComposing) groupAmountInput(elements.dealerAmount, this.state.language);
       if (this.state.dealerKind === 'fiat') this.tradeFiatRaw = elements.dealerAmount.value;
       else this.tradeBitcoinRaw = elements.dealerAmount.value;
       this.renderTrade();

@@ -1,4 +1,4 @@
-const CACHE = 'priceconverter-shell-v29';
+const CACHE = 'priceconverter-shell-v30';
 const SHELL = ['./','./index.html','./style.css','./app.js','./rates.js','./quotes.js','./currencies.js','./i18n.js',
   './locales/sk.js','./locales/es.js','./locales/pl.js','./locales/de.js','./locales/fr.js','./locales/pt.js',
   './locales/ru.js','./locales/uk.js','./locales/sv.js','./locales/nb.js','./locales/eo.js',

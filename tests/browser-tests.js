@@ -63,9 +63,23 @@ await check('Převody BTC, SATS a desetinné zápisy', () => {
 await check('Čitelné zadávání velkých částek bez ztráty přesnosti', () => {
   assert(groupTypedAmount('50000000').replace(/\u00a0/g, ' ') === '50 000 000', 'Velká částka PYG');
   assert(groupTypedAmount('12345,60').replace(/\u00a0/g, ' ') === '12 345,60', 'Desetinná místa zůstávají');
-  assert(groupTypedAmount('0.00000001') === '0.00000001', 'Přesnost BTC');
+  assert(groupTypedAmount('0.00000001') === '0,00000001' &&
+    groupTypedAmount('0,00000001', 'en') === '0.00000001', 'Přesnost BTC a místní desetinný oddělovač');
   assert(groupTypedAmount('abc') === 'abc', 'Neúplný nebo chybný zápis se nemění');
   assert(parseAmount(groupTypedAmount('50000000'), 'sk') === 50_000_000, 'Převod bere nezměněnou hodnotu');
+  assert(groupTypedAmount('500355334444', 'en') === '500,355,334,444' &&
+    groupTypedAmount('500355334444', 'de') === '500.355.334.444', 'Anglické čárky a německé tečky');
+  assert(groupTypedAmount('1234', 'es') === '1234' && groupTypedAmount('12345', 'es') === '12.345',
+    'Španělské seskupení začíná až u pěti číslic');
+  assert(groupTypedAmount('1,2345', 'en', '1,234') === '12,345' &&
+    groupTypedAmount('1,23', 'en', '1,234') === '123', 'Průběžné psaní a mazání skupin');
+  assert(groupTypedAmount('1,234.50', 'en') === '1,234.50' &&
+    groupTypedAmount('1.234,50', 'de') === '1.234,50', 'Zadaná desetinná část zůstává');
+  for (const language of SUPPORTED_LANGUAGES) {
+    const formatted = groupTypedAmount('500355334444', language);
+    assert(formatted === new Intl.NumberFormat(localeFor(language)).format(500_355_334_444) &&
+      parseAmount(formatted, language) === 500_355_334_444, `${language}: vstup, výstup a číselná hodnota`);
+  }
 });
 
 await check('Přehledné měny bez ztráty drobných částek', () => {
@@ -246,7 +260,7 @@ await check('Sdílená nabídka uvádí směr, přesné satoshi a stáří podkl
   const date = new Date('2026-09-23T12:00:00Z');
   const buy = tradeQuote({marketRate:2_000_000, marginPercent:2, side:'buy', amount:10_000});
   const text = formatTradeOffer(buy, {currency:'CZK', generatedAt:date, referenceUpdatedAt:date.valueOf()});
-  assert(/Koupím od vás 0\.00510205 BTC za 10\s?000 CZK\./.test(text) &&
+  assert(/Koupím od vás 0,00510205 BTC za 10\s?000 CZK\./.test(text) &&
     /1\s?960\s?000 CZK/.test(text), 'Nabídka nákupu');
   assert(text.includes('Podkladový kurz načten:') && !text.includes('2 %'), 'Stáří bez zveřejnění marže');
   const sell = tradeQuote({marketRate:2_000_000, marginPercent:2, side:'sell', amount:0.005, amountKind:'bitcoin'});
@@ -433,7 +447,7 @@ await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
     const amountInput = doc.querySelector('#dealer-amount');
     amountInput.value = '50000000'; amountInput.setSelectionRange(8, 8);
     amountInput.dispatchEvent(new Event('input', {bubbles:true}));
-    assert(amountInput.value.replace(/\u00a0/g, ' ') === '50 000 000' &&
+    assert(amountInput.value === '50,000,000' &&
       amountInput.selectionStart === amountInput.value.length, 'Oddělování tisíců při psaní');
     amountInput.focus();
     const done = new doc.defaultView.KeyboardEvent('keydown', {key:'Enter', bubbles:true, cancelable:true});
