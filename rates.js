@@ -52,8 +52,10 @@ export const SOURCES = [
   {name:'Blockchain.info',url:'https://blockchain.info/ticker',parse:data => Object.fromEntries(Object.entries(data).map(([code, item]) => [code, item.last]))}
 ];
 
-export async function fetchRates(fetchImpl = fetch) {
-  const settled = await Promise.allSettled(SOURCES.map(async source => {
+export async function fetchRates(fetchImpl = fetch, selectedSources = SOURCES.map(source => source.name)) {
+  const selection = Array.isArray(selectedSources) ? SOURCES.filter(source => selectedSources.includes(source.name)) : [];
+  if (!selection.length) throw new Error('Vyberte alespoň jeden zdroj kurzů');
+  const settled = await Promise.allSettled(selection.map(async source => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 12000);
     try {
@@ -67,5 +69,5 @@ export async function fetchRates(fetchImpl = fetch) {
   const successful = settled.filter(result => result.status === 'fulfilled').map(result => result.value);
   const rates = averageRates(successful.map(result => result.rates));
   if (!Object.keys(rates).length) throw new Error('Kurzy nelze načíst');
-  return {rates, sources:successful.map(result => result.name), updatedAt:Date.now()};
+  return {rates, sources:successful.map(result => result.name), selectedSources:selection.map(source => source.name), updatedAt:Date.now()};
 }

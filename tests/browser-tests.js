@@ -84,6 +84,11 @@ await check('Neplatné kurzy a poškozená uložená data', () => {
   assert(restoreSettings('{}').fiatPrecision === 'auto' &&
     restoreSettings('{"fiatPrecision":"4"}').fiatPrecision === '4' &&
     restoreSettings('{"fiatPrecision":"bad"}').fiatPrecision === 'auto', 'Přesnost měn a obnova nastavení');
+  assert(restoreSettings('{}').rateSources.join(',') === 'CoinGecko,BitPay,Blockchain.info', 'Výchozí tři zdroje');
+  assert(restoreSettings('{"rateSources":["BitPay","BitPay","neznámý"]}').rateSources.join(',') === 'BitPay', 'Uložený výběr zdrojů');
+  assert(restoreSettings('{"rateSources":[]}').rateSources.length === 3, 'Nelze načíst prázdný výběr');
+  const cache = {rates:{CZK:2_000_000}, sources:['BitPay'], selectedSources:['BitPay'], updatedAt:Date.now()};
+  assert(restoreSettings(JSON.stringify({rateSources:['BitPay'],cache})).cache.selectedSources.join(',') === 'BitPay', 'Původ posledního kurzu');
   const invalidChart = restoreSettings(JSON.stringify({mode:'other',showChartPreview:'false',chartRange:'0D'}));
   assert(invalidChart.mode === 'convert' && invalidChart.showChartPreview && invalidChart.chartRange === '12M', 'Neplatné nastavení grafu');
 });
@@ -95,6 +100,20 @@ await check('Výpadek zdroje neodstaví dostupný kurz', async () => {
   };
   const result = await fetchRates(fakeFetch);
   assert(result.sources.join(',') === 'BitPay' && result.rates.PYG === 510_000_000, 'Chybí platný zdroj');
+});
+
+await check('Vybrané zdroje nepoptávají ostatní poskytovatele', async () => {
+  const requested = [];
+  const fakeFetch = async url => {
+    requested.push(url);
+    return {ok:true, json:async () => ({data:[{code:'CZK', rate:2_000_000}]})};
+  };
+  const result = await fetchRates(fakeFetch, ['BitPay']);
+  assert(requested.length === 1 && requested[0].includes('bitpay'), 'Dotaz jen na BitPay');
+  assert(result.sources.join(',') === 'BitPay' && result.selectedSources.join(',') === 'BitPay', 'Uložený původ kurzu');
+  let rejected = false;
+  try { await fetchRates(fakeFetch, []); } catch { rejected = true; }
+  assert(rejected && requested.length === 1, 'Prázdný výběr nespouští požadavky');
 });
 
 await check('Kurzy se automaticky načítají nejdříve po hodině', () => {
@@ -109,6 +128,9 @@ await check('Kurzy se automaticky načítají nejdříve po hodině', () => {
   assert(shouldRefreshRates(null, 0, now), 'Bez cache proběhne první dotaz');
   assert(!shouldRefreshRates(old, now - 30_000, now, true), 'Ruční obnovení má odstup');
   assert(shouldRefreshRates(fresh, now - 60_000, now, true), 'Po minutě lze kurz vyžádat ručně');
+  const selectedCache = {updatedAt:now, selectedSources:['BitPay']};
+  assert(!shouldRefreshRates(selectedCache, now - 60_000, now, false, ['CoinGecko']), 'Změna výběru neobchází hodinový limit');
+  assert(shouldRefreshRates(selectedCache, now - 60 * 60_000, now, false, ['CoinGecko']), 'Změna výběru se později sama načte');
 });
 
 await check('Jedno procento zvýhodní nákup i prodej BTC', () => {
@@ -366,6 +388,17 @@ await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
     doc.querySelector('#menu-toggle').click();
     doc.querySelector('#tab-settings').click();
     assert(!doc.querySelector('#settings-pane').hidden && doc.querySelector('#screen-title').textContent === 'Settings', 'Obrazovka nastavení');
+    const sources = [...doc.querySelectorAll('#rate-source-controls input')];
+    assert(sources.length === 3 && sources.every(input => input.checked), 'Tři aktivní zdroje kurzů');
+    for (const input of sources.filter(input => input.value !== 'BitPay')) {
+      input.checked = false; input.dispatchEvent(new Event('change', {bubbles:true}));
+    }
+    assert(sources.find(input => input.value === 'BitPay').disabled &&
+      JSON.parse(localStorage.getItem(key)).rateSources.join(',') === 'BitPay', 'Poslední zdroj zůstává aktivní');
+    assert(doc.querySelector('#source-last') && doc.querySelector('#settings-refresh'), 'Původ kurzu a ruční obnovení');
+    for (const input of sources.filter(input => input.value !== 'BitPay')) {
+      input.checked = true; input.dispatchEvent(new Event('change', {bubbles:true}));
+    }
     const precision = doc.querySelector('#fiat-precision');
     assert(precision.value === 'auto', 'Výchozí automatická přesnost');
     precision.value = '2'; precision.dispatchEvent(new Event('change', {bubbles:true}));

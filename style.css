@@ -337,6 +337,20 @@ body {
 .switch-control input:checked+.switch-track::after { transform:translateX(22px) }
 .switch-control input:focus-visible+.switch-track { outline:3px solid #bc8fe7;outline-offset:3px }
 .settings-card .field-select { margin-top:5px }
+.sources-card { gap:12px }
+.source-controls { display:grid;gap:2px;margin:0;padding:0;border:0;min-width:0 }
+.source-controls legend { margin-bottom:8px;padding:0;color:#392065;font-size:14px;font-weight:700 }
+.source-option { display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:51px;padding:8px 0;border-top:1px solid #eee7f3;cursor:pointer }
+.source-description { display:grid;gap:2px;min-width:0 }
+.source-description strong { color:#392065;font-size:13px }
+.source-description small { color:#746386;font-size:11px;overflow:hidden;text-overflow:ellipsis }
+.source-option input { flex:none;width:20px;height:20px;margin:0;accent-color:#6b39a1;cursor:pointer }
+.source-option input:disabled { cursor:default }
+.sources-card .settings-hint { margin:0 }
+.source-last { margin:0;color:#392065;font-size:12px;line-height:1.4;overflow-wrap:anywhere }
+.sources-refresh { justify-self:start;min-height:38px;padding:7px 14px;border:1px solid #bda4d8;border-radius:5px;background:#f7f0fc;color:#503079;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer }
+.sources-refresh:disabled { opacity:.6;cursor:default }
+.sources-refresh:focus-visible { outline:3px solid #bc8fe7;outline-offset:2px }
 
 .unit-switch {
   display:flex;

@@ -1,4 +1,4 @@
-import {parseAmount, btcFrom, fromBtc, fetchRates} from './rates.js';
+import {parseAmount, btcFrom, fromBtc, fetchRates, SOURCES} from './rates.js';
 import {CURRENCIES, getCurrencies} from './currencies.js';
 import {resolveLanguage, t, ageText, sourceCount} from './i18n.js';
 import {parsePercent, tradeQuote, travelQuote, compareTravelOffer} from './quotes.js';
@@ -10,6 +10,8 @@ const MANUAL_REFRESH_MS = 60_000;
 const DEFAULT_CURRENCIES = ['CZK', 'EUR', 'USD'];
 const CHART_RANGES = ['1M', '3M', '12M', '60M', 'MAX'];
 const FIAT_PRECISIONS = ['auto', '0', '2', '4'];
+const RATE_SOURCE_NAMES = SOURCES.map(source => source.name);
+const sameSources = (left, right) => left.length === right.length && left.every(name => right.includes(name));
 const CURRENCY_CODES = new Set(CURRENCIES.map(currency => currency.code));
 const currencyMinorUnits = new Map();
 const isRate = value => typeof value === 'number' && Number.isFinite(value) && value > 0;
@@ -43,9 +45,10 @@ export function formatConvertedFiat(value, code, language = 'cs', precision = 'a
     {maximumFractionDigits:digits}).format(value);
 }
 
-export function shouldRefreshRates(cache, lastAttempt, now = Date.now(), manual = false) {
+export function shouldRefreshRates(cache, lastAttempt, now = Date.now(), manual = false, selectedSources = RATE_SOURCE_NAMES) {
   if (Number.isFinite(lastAttempt) && lastAttempt > 0 && now - lastAttempt < (manual ? MANUAL_REFRESH_MS : AUTO_REFRESH_MS)) return false;
-  return manual || !cache || !Number.isFinite(cache.updatedAt) || now - cache.updatedAt >= AUTO_REFRESH_MS;
+  return manual || !cache || !Number.isFinite(cache.updatedAt) || now - cache.updatedAt >= AUTO_REFRESH_MS ||
+    !sameSources(cache.selectedSources || RATE_SOURCE_NAMES, selectedSources);
 }
 
 // A quote is written from the owner's perspective, addressed to the other party.
@@ -76,6 +79,9 @@ export function restoreSettings(json) {
   const selected = Array.isArray(saved.selected)
     ? [...new Set(saved.selected.filter(code => typeof code === 'string' && CURRENCY_CODES.has(code)))]
     : DEFAULT_CURRENCIES.slice();
+  const rateSources = Array.isArray(saved.rateSources)
+    ? RATE_SOURCE_NAMES.filter(name => saved.rateSources.includes(name)) : RATE_SOURCE_NAMES.slice();
+  if (!rateSources.length) rateSources.push(...RATE_SOURCE_NAMES);
   const storedCache = saved.cache;
   let cache = null;
   if (storedCache && typeof storedCache === 'object' && !Array.isArray(storedCache) &&
@@ -84,13 +90,18 @@ export function restoreSettings(json) {
       Array.isArray(storedCache.sources)) {
     const rates = Object.fromEntries(Object.entries(storedCache.rates).filter(([code, value]) => CURRENCY_CODES.has(code) && isRate(value)));
     const sources = storedCache.sources.filter(name => typeof name === 'string' && name.length < 80);
-    if (Object.keys(rates).length && sources.length) cache = {rates, sources, updatedAt:storedCache.updatedAt};
+    if (Object.keys(rates).length && sources.length) {
+      const selectedSources = Array.isArray(storedCache.selectedSources)
+        ? RATE_SOURCE_NAMES.filter(name => storedCache.selectedSources.includes(name)) : RATE_SOURCE_NAMES.slice();
+      cache = {rates, sources, selectedSources:selectedSources.length ? selectedSources : RATE_SOURCE_NAMES.slice(),
+        updatedAt:storedCache.updatedAt};
+    }
   }
   // Older versions saved signed buy/sell adjustments. Keep the active side's
   // price when migrating: buying below market used a negative adjustment.
   const legacyMargin = saved.dealerSide === 'sell' ? saved.sellPercent : -saved.buyPercent;
   const marginPercent = savedPercent(saved.marginPercent, savedPercent(legacyMargin, 2));
-  return {selected, unit:saved.unit === 'SATS' ? 'SATS' : 'BTC', cache,
+  return {selected, rateSources, unit:saved.unit === 'SATS' ? 'SATS' : 'BTC', cache,
     languageMode:['cs', 'en'].includes(saved.languageMode) ? saved.languageMode : 'auto',
     mode:['convert', 'travel', 'trade', 'chart', 'settings'].includes(saved.mode) ? saved.mode : 'convert',
     showChartPreview:saved.showChartPreview !== false,
@@ -133,6 +144,8 @@ export class ConverterApp {
       travelSourceEquivalent:'travel-source-equivalent', travelOfferError:'travel-offer-error',
       chartPreview:'chart-preview', chartPeriod:'chart-period', chartVisibility:'show-chart-preview',
       chartPreviewState:'chart-preview-state', fiatPrecision:'fiat-precision',
+      rateSourceControls:'rate-source-controls', sourceLast:'source-last',
+      sourceSelectionStatus:'source-selection-status', settingsRefresh:'settings-refresh',
       chartRange:'chart-range', miniChart:'mini-chart', miniChartFallback:'mini-chart-fallback', openChart:'open-chart',
       largeChart:'large-chart',
       largeChartFallback:'large-chart-fallback',
@@ -175,9 +188,9 @@ export class ConverterApp {
   tr(key, parameters) { return t(this.state.language, key, parameters); }
 
   save() {
-    const {selected, unit, cache, languageMode, mode, showChartPreview, chartRange, fiatPrecision, tradeCurrency, marginPercent,
+    const {selected, rateSources, unit, cache, languageMode, mode, showChartPreview, chartRange, fiatPrecision, tradeCurrency, marginPercent,
       dealerSide, dealerSideChosen, dealerKind, travelFrom, travelTo} = this.state;
-    try { this.win.localStorage.setItem(STORAGE_KEY, JSON.stringify({selected, unit, cache, languageMode,
+    try { this.win.localStorage.setItem(STORAGE_KEY, JSON.stringify({selected, rateSources, unit, cache, languageMode,
       mode, showChartPreview, chartRange, fiatPrecision, tradeCurrency, marginPercent, dealerSide, dealerSideChosen,
       dealerKind, travelFrom, travelTo})); }
     catch { /* Conversion remains available without local storage. */ }
@@ -356,6 +369,19 @@ export class ConverterApp {
       this.miniChartLoaded = false;
       this.miniChartRange = null;
     }
+  }
+
+  syncSourceSettings() {
+    const {state, elements} = this;
+    for (const input of elements.rateSourceControls.querySelectorAll('input')) {
+      input.checked = state.rateSources.includes(input.value);
+      input.disabled = input.checked && state.rateSources.length === 1;
+    }
+    elements.sourceLast.textContent = state.cache
+      ? this.tr('sourcesLast', {sources:state.cache.sources.join(', ')}) : this.tr('sourcesNotLoaded');
+    elements.sourceSelectionStatus.textContent = state.cache &&
+      !sameSources(state.cache.selectedSources || RATE_SOURCE_NAMES, state.rateSources)
+      ? this.tr('sourcesPending') : this.tr('sourcesNextRefresh');
   }
 
   resetChart(container) {
@@ -593,10 +619,12 @@ export class ConverterApp {
   showStatus() {
     const {state, elements} = this;
     const waitMs = Math.max(0, MANUAL_REFRESH_MS - (Date.now() - this.lastRateAttempt));
-    elements.refresh.disabled = state.busy || waitMs > 0;
-    elements.refresh.title = waitMs > 0 ? this.tr('refreshWait', {seconds:Math.ceil(waitMs / 1000)}) : this.tr('refresh');
-    const cache = state.cache;
     const online = this.win.navigator.onLine;
+    elements.refresh.disabled = elements.settingsRefresh.disabled = state.busy || waitMs > 0 || !online;
+    const refreshTitle = waitMs > 0 ? this.tr('refreshWait', {seconds:Math.ceil(waitMs / 1000)}) : this.tr('refresh');
+    elements.refresh.title = elements.settingsRefresh.title = refreshTitle;
+    this.syncSourceSettings();
+    const cache = state.cache;
     const ageMs = cache ? Date.now() - cache.updatedAt : 0;
     elements.dot.classList.toggle('live', Boolean(cache && online && !state.error && ageMs < 3_600_000));
     elements.dot.classList.toggle('stale', Boolean(cache && (state.error || !online || ageMs >= 3_600_000)));
@@ -725,7 +753,7 @@ export class ConverterApp {
       const stored = Number(this.win.localStorage.getItem(RATE_ATTEMPT_KEY));
       if (Number.isFinite(stored) && stored > this.lastRateAttempt && stored <= Date.now()) this.lastRateAttempt = stored;
     } catch { /* Keep the in-memory cooldown. */ }
-    if (!shouldRefreshRates(state.cache, this.lastRateAttempt, Date.now(), manual)) {
+    if (!shouldRefreshRates(state.cache, this.lastRateAttempt, Date.now(), manual, state.rateSources)) {
       this.showStatus(); return;
     }
     this.lastRateAttempt = Date.now();
@@ -735,7 +763,7 @@ export class ConverterApp {
     state.busy = true; state.error = false;
     elements.refresh.classList.add('loading'); elements.refresh.disabled = true; this.showStatus();
     try {
-      state.cache = await fetchRates();
+      state.cache = await fetchRates(fetch, [...state.rateSources]);
       this.save();
       if (state.anchor !== 'BTC' && !this.hasRate(state.anchor)) {
         state.anchor = 'BTC'; state.raw = this.format(fromBtc(state.btc, 'BTC', {}, state.unit), 'BTC');
@@ -753,6 +781,22 @@ export class ConverterApp {
 
   start() {
     const {elements, win} = this;
+    for (const source of SOURCES) {
+      const label = this.doc.createElement('label'); label.className = 'source-option';
+      const description = this.doc.createElement('span'); description.className = 'source-description';
+      const name = this.doc.createElement('strong'); name.textContent = source.name;
+      const domain = this.doc.createElement('small'); domain.textContent = new URL(source.url).hostname;
+      description.append(name, domain);
+      const input = this.doc.createElement('input'); input.type = 'checkbox'; input.name = 'rate-source'; input.value = source.name;
+      input.addEventListener('change', () => {
+        const selected = RATE_SOURCE_NAMES.filter(item =>
+          [...elements.rateSourceControls.querySelectorAll('input')].some(control => control.value === item && control.checked));
+        if (!selected.length) { this.syncSourceSettings(); return; }
+        this.state.rateSources = selected;
+        this.save(); this.showStatus();
+      });
+      label.append(description, input); elements.rateSourceControls.append(label);
+    }
     elements.btc.value = this.state.raw;
     const percentFormatter = new Intl.NumberFormat(this.state.language === 'cs' ? 'cs-CZ' : 'en-US', {maximumFractionDigits:4, useGrouping:false});
     elements.marginPercent.value = percentFormatter.format(this.state.marginPercent);
@@ -770,6 +814,7 @@ export class ConverterApp {
     elements.btcButton.addEventListener('click', () => this.setUnit('BTC'));
     elements.satsButton.addEventListener('click', () => this.setUnit('SATS'));
     elements.refresh.addEventListener('click', () => this.refresh(true));
+    elements.settingsRefresh.addEventListener('click', () => this.refresh(true));
     elements.language.addEventListener('change', () => { this.state.languageMode = elements.language.value; this.applyLanguage(); this.save(); });
     elements.add.addEventListener('click', () => { this.renderOptions(); elements.dialog.showModal(); elements.search.focus(); });
     elements.sort.addEventListener('click', () => { this.sorting = !this.sorting; this.renderRows(); elements.sort.focus(); });
