@@ -1,6 +1,7 @@
 // Each provider reports fiat units for one BTC. After rejecting outliers we
 // average the inverse, so each available provider has equal weight.
 import {CURRENCIES} from './currencies.js';
+import {localeFor} from './i18n.js';
 export {CURRENCIES} from './currencies.js';
 
 const allowed = new Set(CURRENCIES.map(currency => currency.code));
@@ -9,8 +10,11 @@ const MAX_RATE_DEVIATION = 0.05;
 
 export function parseAmount(input, language = 'cs') {
   let cleaned = String(input).trim().replace(/[\s\u00a0\u202f]/g, '');
-  if (language === 'en' && /^(\d{1,3},)+\d{3}(?:\.\d*)?$/.test(cleaned)) cleaned = cleaned.replace(/,/g, '');
-  else if (language === 'cs' && /^(\d{1,3}\.)+\d{3},\d*$/.test(cleaned)) cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+  const parts = new Intl.NumberFormat(localeFor(language)).formatToParts(12345.6);
+  const group = parts.find(part => part.type === 'group')?.value;
+  const decimal = parts.find(part => part.type === 'decimal')?.value;
+  if (group === ',' && decimal === '.' && /^(\d{1,3},)+\d{3}(?:\.\d*)?$/.test(cleaned)) cleaned = cleaned.replace(/,/g, '');
+  else if (group === '.' && decimal === ',' && /^(\d{1,3}\.)+\d{3}(?:,\d*)?$/.test(cleaned)) cleaned = cleaned.replace(/\./g, '').replace(',', '.');
   else if (cleaned.includes(',') && cleaned.includes('.')) return null;
   else cleaned = cleaned.replace(',', '.');
   if (!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(cleaned)) return null;

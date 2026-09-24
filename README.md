@@ -15,7 +15,7 @@
 - **Personal trades:** Set a margin for buying or selling BTC and share a quote.
 - **Travel:** Compare an exchange counter's rate and fee with the online estimate.
 - **BTC chart:** Explore prices with TradingView.
-- **On your phone:** Installable PWA with Czech and English; saved rates work offline.
+- **On your phone:** Installable PWA in 13 languages; saved rates work offline.
 
 ### Run locally
 

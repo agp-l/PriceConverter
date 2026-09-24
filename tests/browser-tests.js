@@ -1,4 +1,4 @@
-import {detectLanguage, resolveLanguage, t} from '../i18n.js';
+import {SUPPORTED_LANGUAGES, messages, detectLanguage, resolveLanguage, localeFor, sourceCount, t} from '../i18n.js';
 import {getCurrencies} from '../currencies.js';
 import {averageRates, checkedRates, parseAmount, btcFrom, fromBtc, fetchRates} from '../rates.js';
 import {restoreSettings, ConverterApp, formatConvertedFiat, formatTradeOffer, shouldRefreshRates} from '../app.js';
@@ -21,9 +21,26 @@ async function check(name, test) {
 }
 
 await check('Automatický jazyk, ruční volba a překlady', () => {
-  assert(detectLanguage(['fr-FR', 'cs-CZ']) === 'cs', 'Automatický jazyk');
+  assert(detectLanguage(['fr-FR', 'cs-CZ']) === 'fr', 'Automatický jazyk');
   assert(resolveLanguage('en', ['cs-CZ']) === 'en', 'Ruční volba');
   assert(t('en', 'amountIn', {name:'Guarani'}) === 'Amount in Guarani', 'Překlad s parametrem');
+  assert(detectLanguage(['no-NO']) === 'nb' && detectLanguage(['pt-PT']) === 'pt', 'Automatická norština a portugalština');
+  assert(localeFor('es') === 'es-ES' && localeFor('pt') === 'pt-PT', 'Místní formát čísel');
+  assert(sourceCount('pl', 2) === '2 źródła' && sourceCount('pl', 5) === '5 źródeł' &&
+    sourceCount('fr', 0) === '0 sources', 'Skloňování počtu zdrojů');
+});
+
+await check('Všechny jazyky mají kompletní texty a shodné parametry', () => {
+  const keys = Object.keys(messages.cs).sort();
+  const parameters = text => [...text.matchAll(/\{(\w+)\}/g)].map(match => match[1]).sort().join(',');
+  assert(SUPPORTED_LANGUAGES.length === 13, 'Očekávaný počet jazyků');
+  for (const language of SUPPORTED_LANGUAGES) {
+    assert(JSON.stringify(Object.keys(messages[language]).sort()) === JSON.stringify(keys), `${language}: chybějící nebo nadbytečné texty`);
+    for (const key of keys) {
+      assert(typeof messages[language][key] === 'string' && messages[language][key].trim(), `${language}: prázdný text ${key}`);
+      assert(parameters(messages[language][key]) === parameters(messages.cs[key]), `${language}: parametry textu ${key}`);
+    }
+  }
 });
 
 await check('Měny včetně PYG v obou jazycích', () => {
@@ -38,6 +55,8 @@ await check('Převody BTC, SATS a desetinné zápisy', () => {
   assert(btcFrom(1, 'BTC', {}, 'SATS') === 0.00000001, 'Zpět na BTC');
   assert(parseAmount('1 234,50', 'cs') === 1234.5, 'Český zápis');
   assert(parseAmount('1,234.5', 'en') === 1234.5, 'Anglický zápis');
+  assert(parseAmount('1.234,50', 'es') === 1234.5 && parseAmount('1.234', 'de') === 1234, 'Španělské a německé oddělovače');
+  assert(parseAmount('1 234,50', 'pl') === 1234.5 && parseAmount('0.00000001', 'es') === 0.00000001, 'Polské částky a BTC s tečkou');
   assert(parseAmount('1,2,3') === null, 'Neplatný zápis');
 });
 
@@ -346,6 +365,14 @@ await check('Rozhraní: jazyk, satoshi a přidání PYG', async () => {
     doc.querySelector('#language-switch').value = 'en';
     doc.querySelector('#language-switch').dispatchEvent(new Event('change', {bubbles:true}));
     assert(doc.documentElement.lang === 'en' && btc.value === '0.00000001', 'Změna jazyka a přesnost');
+    const switcher = doc.querySelector('#language-switch');
+    assert(SUPPORTED_LANGUAGES.every(language => [...switcher.options].some(option => option.value === language)), 'Volby jazyků v nabídce');
+    for (const language of SUPPORTED_LANGUAGES) {
+      switcher.value = language; switcher.dispatchEvent(new Event('change', {bubbles:true}));
+      assert(doc.documentElement.lang === language && doc.querySelector('#currencies-heading').textContent === t(language, 'myCurrencies'),
+        `${language}: změna jazyka aplikace`);
+    }
+    switcher.value = 'en'; switcher.dispatchEvent(new Event('change', {bubbles:true}));
     doc.querySelector('#add-currency').click();
     const search = doc.querySelector('#currency-search');
     search.value = 'PYG'; search.dispatchEvent(new Event('input', {bubbles:true}));

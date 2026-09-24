@@ -1,6 +1,6 @@
 import {parseAmount, btcFrom, fromBtc, fetchRates, SOURCES} from './rates.js';
 import {CURRENCIES, getCurrencies} from './currencies.js';
-import {SUPPORTED_LANGUAGES, resolveLanguage, t, ageText, sourceCount} from './i18n.js';
+import {SUPPORTED_LANGUAGES, resolveLanguage, localeFor, t, ageText, sourceCount} from './i18n.js';
 import {parsePercent, tradeQuote, travelQuote, compareTravelOffer} from './quotes.js';
 
 const STORAGE_KEY = 'priceconverter:v1';
@@ -15,7 +15,8 @@ const sameSources = (left, right) => left.length === right.length && left.every(
 const CURRENCY_CODES = new Set(CURRENCIES.map(currency => currency.code));
 const currencyMinorUnits = new Map();
 const isRate = value => typeof value === 'number' && Number.isFinite(value) && value > 0;
-const searchable = value => value.toLocaleLowerCase('cs').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const searchable = value => value.toLocaleLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .replace(/ł/g, 'l').replace(/ø/g, 'o').replace(/ß/g, 'ss');
 const savedPercent = (value, fallback) => typeof value === 'number' && Number.isFinite(value) && value > -100 && value < 100 ? value : fallback;
 const savedCurrency = (value, fallback) => CURRENCY_CODES.has(value) ? value : fallback;
 
@@ -41,7 +42,7 @@ export function formatConvertedFiat(value, code, language = 'cs', precision = 'a
   // Even in whole-number mode a small, nonzero amount must not look like zero.
   if (abs > 0 && abs < 0.5 * 10 ** -digits)
     digits = Math.max(digits, Math.min(12, 2 - Math.floor(Math.log10(abs))));
-  return new Intl.NumberFormat(language === 'cs' ? 'cs-CZ' : 'en-US',
+  return new Intl.NumberFormat(localeFor(language),
     {maximumFractionDigits:digits}).format(value);
 }
 
@@ -55,7 +56,7 @@ export function shouldRefreshRates(cache, lastAttempt, now = Date.now(), manual 
 // Do not expose the owner's margin or market comparison in the shared offer.
 export function formatTradeOffer(quote, {currency, unit = 'BTC', language = 'cs',
   generatedAt = new Date(), referenceUpdatedAt = null} = {}) {
-  const locale = language === 'cs' ? 'cs-CZ' : 'en-US';
+  const locale = localeFor(language);
   const number = new Intl.NumberFormat(locale, {maximumFractionDigits:8});
   const btc = unit === 'SATS'
     ? `${number.format(quote.sats)} sats (${quote.btc.toFixed(8)} BTC)`
@@ -202,7 +203,7 @@ export class ConverterApp {
   }
 
   setFormatters() {
-    const locale = this.state.language === 'cs' ? 'cs-CZ' : 'en-US';
+    const locale = localeFor(this.state.language);
     this.formatters = {
       btc:new Intl.NumberFormat(locale, {maximumFractionDigits:8}),
       sats:new Intl.NumberFormat(locale, {maximumFractionDigits:3}),
@@ -218,7 +219,7 @@ export class ConverterApp {
   formatEntry(value, raw, code) {
     const fraction = raw.trim().replace(/[\s\u00a0\u202f]/g, '').match(/[,.](\d+)$/)?.[1].length || 0;
     const digits = Math.min(15, Math.max(code === 'BTC' ? 8 : 3, fraction));
-    return new Intl.NumberFormat(this.state.language === 'cs' ? 'cs-CZ' : 'en-US',
+    return new Intl.NumberFormat(localeFor(this.state.language),
       {maximumFractionDigits:digits}).format(value);
   }
 
@@ -437,7 +438,7 @@ export class ConverterApp {
     const {state, elements} = this;
     const amount = parseAmount(elements.travelAmount.value, state.language);
     const quote = travelQuote(amount, state.travelFrom, state.travelTo, state.cache?.rates);
-    const locale = state.language === 'cs' ? 'cs-CZ' : 'en-US';
+    const locale = localeFor(state.language);
     const number = new Intl.NumberFormat(locale, {maximumFractionDigits:8});
     const codes = {from:state.travelFrom, to:state.travelTo};
     elements.travelOfferBasis.options[0].textContent = this.tr('quoteForFrom', codes);
@@ -567,7 +568,7 @@ export class ConverterApp {
     if (manual) elements.marketSourceHint.textContent = this.tr('manualMarketHint');
     const amount = parseAmount(elements.dealerAmount.value, state.language);
     const marginPercent = parsePercent(elements.marginPercent.value, state.language);
-    const percentText = marginPercent === null ? '' : new Intl.NumberFormat(state.language === 'cs' ? 'cs-CZ' : 'en-US',
+    const percentText = marginPercent === null ? '' : new Intl.NumberFormat(localeFor(state.language),
       {maximumFractionDigits:4, useGrouping:false}).format(Math.abs(marginPercent));
     const previewKey = marginPercent === null ? 'marginInvalid' : marginPercent === 0 ? 'marginZero'
       : marginPercent > 0 ? buying ? 'marginBuyFavorable' : 'marginSellFavorable'
@@ -650,7 +651,7 @@ export class ConverterApp {
       ? this.tr('old') : this.tr('fresh', {sources:sourceCount(state.language, cache.sources.length)});
     elements.status.textContent = `${prefix} ${ageText(state.language, minutes)}`;
     elements.status.title = this.tr('sourceTitle', {sources:cache.sources.join(', '),
-      date:new Date(cache.updatedAt).toLocaleString(state.language === 'cs' ? 'cs-CZ' : 'en-US')});
+      date:new Date(cache.updatedAt).toLocaleString(localeFor(state.language))});
   }
 
   applyLanguage() {
@@ -674,7 +675,7 @@ export class ConverterApp {
     if (tradeFiatAmount !== null) this.tradeFiatRaw = this.formatEntry(tradeFiatAmount, this.tradeFiatRaw, state.tradeCurrency);
     if (tradeBitcoinAmount !== null) this.tradeBitcoinRaw = this.formatEntry(tradeBitcoinAmount, this.tradeBitcoinRaw, 'BTC');
     elements.dealerAmount.value = state.dealerKind === 'fiat' ? this.tradeFiatRaw : this.tradeBitcoinRaw;
-    const percentFormatter = new Intl.NumberFormat(state.language === 'cs' ? 'cs-CZ' : 'en-US', {maximumFractionDigits:4, useGrouping:false});
+    const percentFormatter = new Intl.NumberFormat(localeFor(state.language), {maximumFractionDigits:4, useGrouping:false});
     if (marginPercent !== null) elements.marginPercent.value = percentFormatter.format(marginPercent);
     if (manualRate !== null) elements.manualMarket.value = this.formatEntry(manualRate, elements.manualMarket.value, state.tradeCurrency);
     this.doc.documentElement.lang = state.language;
@@ -812,7 +813,7 @@ export class ConverterApp {
       label.append(description, input); elements.rateSourceControls.append(label);
     }
     elements.btc.value = this.state.raw;
-    const percentFormatter = new Intl.NumberFormat(this.state.language === 'cs' ? 'cs-CZ' : 'en-US', {maximumFractionDigits:4, useGrouping:false});
+    const percentFormatter = new Intl.NumberFormat(localeFor(this.state.language), {maximumFractionDigits:4, useGrouping:false});
     elements.marginPercent.value = percentFormatter.format(this.state.marginPercent);
     elements.dealerAmount.value = this.state.dealerKind === 'fiat' ? this.tradeFiatRaw : this.tradeBitcoinRaw;
     elements.btc.addEventListener('input', () => this.recalculate('BTC', elements.btc.value));

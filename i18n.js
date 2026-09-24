@@ -1,7 +1,23 @@
-// Keep this list, messages, the language selector, and number parsing/formatting in sync.
-export const SUPPORTED_LANGUAGES = ['cs', 'en'];
+import sk from './locales/sk.js';
+import es from './locales/es.js';
+import pl from './locales/pl.js';
+import de from './locales/de.js';
+import fr from './locales/fr.js';
+import pt from './locales/pt.js';
+import ru from './locales/ru.js';
+import uk from './locales/uk.js';
+import sv from './locales/sv.js';
+import nb from './locales/nb.js';
+import eo from './locales/eo.js';
 
-const messages = {
+// Keep this list, messages, and the language selector in sync.
+export const SUPPORTED_LANGUAGES = ['cs', 'en', 'sk', 'es', 'pl', 'de', 'fr', 'pt', 'ru', 'uk', 'sv', 'nb', 'eo'];
+const LOCALES = {cs:'cs-CZ', en:'en-US', sk:'sk-SK', es:'es-ES', pl:'pl-PL', de:'de-DE',
+  fr:'fr-FR', pt:'pt-PT', ru:'ru-RU', uk:'uk-UA', sv:'sv-SE', nb:'nb-NO', eo:'eo'};
+
+export function localeFor(language) { return LOCALES[language] || LOCALES.en; }
+
+export const messages = {
   cs: {
     pageTitle:'VexlCalc · BTC nabídky a měny',
     pageDescription:'Nezávislá kalkulačka pro osobní směnu BTC a cestovní převod měn. Funguje i offline s posledním uloženým kurzem.',
@@ -177,12 +193,14 @@ const messages = {
     fresh:'{sources} · updated', sourceTitle:'Sources: {sources} · {date}',
     justNow:'just now', minutesAgo:'{count} min ago', hoursAgo:'{count} h ago', daysAgo:'{count} d ago',
     sourceOne:'source', sourceFew:'sources', sourceMany:'sources'
-  }
+  },
+  sk, es, pl, de, fr, pt, ru, uk, sv, nb, eo
 };
 
 export function detectLanguage(languages = []) {
   for (const locale of languages) {
-    const code = String(locale).toLowerCase().split('-')[0];
+    const raw = String(locale).toLowerCase().split(/[-_]/)[0];
+    const code = raw === 'no' || raw === 'nn' ? 'nb' : raw;
     if (SUPPORTED_LANGUAGES.includes(code)) return code;
   }
   return 'en';
@@ -205,6 +223,7 @@ export function ageText(language, minutes) {
 }
 
 export function sourceCount(language, count) {
-  const key = language === 'cs' ? count === 1 ? 'sourceOne' : count >= 2 && count <= 4 ? 'sourceFew' : 'sourceMany' : count === 1 ? 'sourceOne' : 'sourceMany';
+  const plural = count === 0 ? 'other' : new Intl.PluralRules(localeFor(language)).select(count);
+  const key = plural === 'one' ? 'sourceOne' : plural === 'few' ? 'sourceFew' : 'sourceMany';
   return `${count} ${t(language,key)}`;
 }
