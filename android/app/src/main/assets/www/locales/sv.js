@@ -47,7 +47,7 @@ export default {
   invalidMarketRate:'Ange ett giltigt positivt pris för 1 BTC.', invalidAmount:'Ange ett giltigt icke-negativt belopp.',
   invalidPercent:'Ange en procentsats mellan −100 och 100.', invalidTrade:'Beloppet är för litet eller kan inte uttryckas i hela satoshi.',
   tradeNotice:'Avgifter ingår inte; BTC avrundas till hela satoshi.',
-  addCurrency:'Lägg till valuta', settings:'INSTÄLLNINGAR', installButton:'Installera appen', openSource:'Källkod på GitHub', donate:'Stöd projektet',
+  addCurrency:'Lägg till valuta', settings:'INSTÄLLNINGAR', installButton:'Installera appen', androidApkDownload:"Ladda ner Android-APK", androidApkNote:"Testversion. Vid uppdatering kan du behöva avinstallera den tidigare versionen.", openSource:'Källkod på GitHub', donate:'Stöd projektet',
   donateBitcoin:'Bitcoin-nätverket', donateLightning:'Lightning · BOLT12-erbjudande', copyAddress:'Kopiera BTC-adress',
   copyOffer:'Kopiera erbjudandet', openWallet:'Öppna plånbok',
   bitcoinHint:'Betalning via Bitcoin-nätverket (on-chain); Phoenix tar emot den som en insättning.',

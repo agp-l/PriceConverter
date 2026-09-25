@@ -47,7 +47,7 @@ export default {
   invalidMarketRate:'Saisissez un prix positif valide pour 1 BTC.', invalidAmount:'Saisissez un montant positif ou nul valide.',
   invalidPercent:'Saisissez un pourcentage compris entre −100 et 100.', invalidTrade:'Le montant est trop faible ou ne peut pas être exprimé en satoshis entiers.',
   tradeNotice:'Les frais ne sont pas inclus ; les BTC sont arrondis au satoshi entier.',
-  addCurrency:'Ajouter une devise', settings:'PARAMÈTRES', installButton:"Installer l’application", openSource:'Code source sur GitHub', donate:'Soutenir le projet',
+  addCurrency:'Ajouter une devise', settings:'PARAMÈTRES', installButton:"Installer l’application", androidApkDownload:"Télécharger l’APK Android", androidApkNote:"Version de test. Une mise à jour peut nécessiter de désinstaller la version précédente.", openSource:'Code source sur GitHub', donate:'Soutenir le projet',
   donateBitcoin:'Réseau Bitcoin', donateLightning:'Lightning · offre BOLT12', copyAddress:"Copier l’adresse BTC",
   copyOffer:"Copier l’offre", openWallet:'Ouvrir le portefeuille',
   bitcoinHint:'Paiement sur le réseau Bitcoin (on-chain) ; Phoenix le reçoit comme dépôt.',

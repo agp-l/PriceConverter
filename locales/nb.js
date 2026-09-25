@@ -47,7 +47,7 @@ export default {
   invalidMarketRate:'Angi en gyldig positiv pris for 1 BTC.', invalidAmount:'Angi et gyldig ikke-negativt beløp.',
   invalidPercent:'Angi en prosentandel mellom −100 og 100.', invalidTrade:'Beløpet er for lite eller kan ikke angis i hele satoshi.',
   tradeNotice:'Gebyrer er ikke inkludert; BTC avrundes til hele satoshi.',
-  addCurrency:'Legg til valuta', settings:'INNSTILLINGER', installButton:'Installer appen', openSource:'Kildekode på GitHub', donate:'Støtt prosjektet',
+  addCurrency:'Legg til valuta', settings:'INNSTILLINGER', installButton:'Installer appen', androidApkDownload:"Last ned Android-APK", androidApkNote:"Testversjon. Oppdatering kan kreve at du avinstallerer den forrige versjonen.", openSource:'Kildekode på GitHub', donate:'Støtt prosjektet',
   donateBitcoin:'Bitcoin-nettverket', donateLightning:'Lightning · BOLT12-tilbud', copyAddress:'Kopier BTC-adresse',
   copyOffer:'Kopier tilbudet', openWallet:'Åpne lommebok',
   bitcoinHint:'Betaling via Bitcoin-nettverket (on-chain); Phoenix mottar den som et innskudd.',

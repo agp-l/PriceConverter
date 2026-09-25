@@ -573,6 +573,9 @@ html.chart-page .app-shell {
 .install-dialog { max-width:380px }
 .install-dialog p { color:#6e5e81;font-size:14px;line-height:1.6;margin:0 0 13px }
 .install-dialog p:last-child { color:#392065;font-weight:650;margin-bottom:0 }
+.install-dialog .apk-download { display:block;padding:12px 14px;border-radius:6px;background:#392065;color:#fff;font-weight:700;text-align:center;text-decoration:none }
+.install-dialog .apk-download:hover,.install-dialog .apk-download:focus-visible { background:#52327d }
+.install-dialog .apk-note { margin:10px 0 0;color:#6e5e81;font-size:12px;font-weight:400 }
 .donate-dialog { max-width:410px;overflow-y:auto }
 .donate-method { display:grid;gap:7px;margin-top:16px }
 .donate-method label { font-size:12px;font-weight:750;color:#392065 }

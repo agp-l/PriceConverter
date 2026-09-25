@@ -47,7 +47,7 @@ export default {
   invalidMarketRate:'Zadajte platnú kladnú cenu za 1 BTC.', invalidAmount:'Zadajte platnú nezápornú sumu.',
   invalidPercent:'Zadajte percento medzi −100 a 100.', invalidTrade:'Suma je príliš malá alebo ju nemožno vyjadriť v celých satoshi.',
   tradeNotice:'Poplatky nie sú zahrnuté; BTC sa zaokrúhľuje na celé satoshi.',
-  addCurrency:'Pridať menu', settings:'NASTAVENIA', installButton:'Nainštalovať aplikáciu', openSource:'Zdrojový kód na GitHube', donate:'Podporiť projekt',
+  addCurrency:'Pridať menu', settings:'NASTAVENIA', installButton:'Nainštalovať aplikáciu', androidApkDownload:"Stiahnuť APK pre Android", androidApkNote:"Testovacia verzia. Pri aktualizácii môže byť potrebné odinštalovať predchádzajúcu verziu.", openSource:'Zdrojový kód na GitHube', donate:'Podporiť projekt',
   donateBitcoin:'Bitcoinová sieť', donateLightning:'Lightning · ponuka BOLT12', copyAddress:'Kopírovať BTC adresu',
   copyOffer:'Kopírovať ponuku', openWallet:'Otvoriť peňaženku',
   bitcoinHint:'Platba po bitcoinovej sieti (on-chain); Phoenix ju prijme ako vklad.',

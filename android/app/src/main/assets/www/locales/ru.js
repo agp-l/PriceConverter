@@ -47,7 +47,7 @@ export default {
   invalidMarketRate:'Введите допустимую положительную цену за 1 BTC.', invalidAmount:'Введите допустимую неотрицательную сумму.',
   invalidPercent:'Введите процент от −100 до 100.', invalidTrade:'Сумма слишком мала или её нельзя выразить в целых сатоши.',
   tradeNotice:'Комиссии не включены; BTC округляется до целых сатоши.',
-  addCurrency:'Добавить валюту', settings:'НАСТРОЙКИ', installButton:'Установить приложение', openSource:'Исходный код на GitHub', donate:'Поддержать проект',
+  addCurrency:'Добавить валюту', settings:'НАСТРОЙКИ', installButton:'Установить приложение', androidApkDownload:"Скачать APK для Android", androidApkNote:"Тестовая версия. Для обновления может понадобиться удалить предыдущую версию.", openSource:'Исходный код на GitHub', donate:'Поддержать проект',
   donateBitcoin:'Сеть Bitcoin', donateLightning:'Lightning · предложение BOLT12', copyAddress:'Скопировать BTC-адрес',
   copyOffer:'Скопировать предложение', openWallet:'Открыть кошелёк',
   bitcoinHint:'Платёж через сеть Bitcoin (on-chain); Phoenix примет его как пополнение.',

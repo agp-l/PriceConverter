@@ -47,7 +47,7 @@ export default {
   invalidMarketRate:'Enigu validan pozitivan prezon por 1 BTC.', invalidAmount:'Enigu validan nenegativan kvanton.',
   invalidPercent:'Enigu procenton inter −100 kaj 100.', invalidTrade:'La kvanto estas tro malgranda aŭ ne esprimeblas per tutaj satoŝioj.',
   tradeNotice:'Kotizoj ne estas inkluzivitaj; BTC estas rondigita al tutaj satoŝioj.',
-  addCurrency:'Aldoni valuton', settings:'AGORDOJ', installButton:'Instali la aplikaĵon', openSource:'Fontkodo ĉe GitHub', donate:'Subteni la projekton',
+  addCurrency:'Aldoni valuton', settings:'AGORDOJ', installButton:'Instali la aplikaĵon', androidApkDownload:"Elŝuti Android-APK", androidApkNote:"Testa versio. Por ĝisdatigi eble necesas malinstali la antaŭan version.", openSource:'Fontkodo ĉe GitHub', donate:'Subteni la projekton',
   donateBitcoin:'Bitmona reto', donateLightning:'Lightning · oferto BOLT12', copyAddress:'Kopii BTC-adreson',
   copyOffer:'Kopii oferton', openWallet:'Malfermi monujon',
   bitcoinHint:'Pago tra la bitmona reto (on-chain); Phoenix ricevas ĝin kiel deponon.',

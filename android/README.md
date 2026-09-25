@@ -12,6 +12,8 @@ The web UI opens from `https://appassets.androidplatform.net/assets/www/index.ht
 
 The CI artifact is a **debug signed** APK for testing. For distribution, create and securely store your own release signing key; the repository does not contain one.
 
+`downloads/VexlCalc-android.apk` at the repository root is the public test APK linked from the web app. After a successful build, download the reviewed workflow artifact and commit its APK to this path. Actions only builds and uploads an artifact; it has no repository write permission. Every CI build gets a fresh debug signing key, so installing a later build over an older one may fail until the older test app is uninstalled. Keep the same application ID and use a private, stable release key before distributing production updates.
+
 ## Keep the two copies synchronized
 
 After editing the root web app, run `python3 android/sync-web.py`. The CI workflow runs `python3 android/sync-web.py --check` and fails when the snapshots differ. The APK code stays within `android/`; the web version continues to run at the repository root.
