@@ -27,4 +27,8 @@ Open [localhost:8000](http://localhost:8000/). Browser tests: [localhost:8000/te
 
 **Stack:** HTML, CSS and vanilla JavaScript. No build step or backend.
 
+### Android APK
+
+The [Android project](./android/README.md) packages this full PWA inside a Kotlin Android app. Download the debug APK from the latest successful [Android APK workflow](https://github.com/agp-l/VexlCalc/actions/workflows/android.yml), or build it in Android Studio. The website and APK share the same calculators and translations.
+
 <sub>Independent project; not affiliated with Vexl.</sub>

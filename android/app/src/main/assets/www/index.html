@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#392065">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="VexlCalc">
+  <meta name="description" content="Nezávislá kalkulačka pro osobní směnu BTC a cestovní převod měn.">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icon-192.png">
+  <link rel="stylesheet" href="./style.css">
+  <title>VexlCalc · BTC peníze a měny</title>
+</head>
+<body>
+  <svg class="icon-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+    <symbol id="icon-menu" viewBox="0 0 24 24"><rect x="2.5" y="3" width="19" height="18" rx="2"/><path d="M9 3v18m4-13h5m-5 4h5m-5 4h3"/></symbol>
+    <symbol id="icon-refresh" viewBox="0 0 24 24"><path d="M20 8a8 8 0 1 0 .2 7.5M20 3v5h-5"/></symbol>
+    <symbol id="icon-convert" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M8 7h8M8 12h2m4 0h2m-8 5h2m4 0h2"/></symbol>
+    <symbol id="icon-trade" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M2 12h6m-3-3-3 3 3 3m17-3h-6m3-3 3 3-3 3"/></symbol>
+    <symbol id="icon-travel" viewBox="0 0 24 24"><rect x="2" y="4" width="16" height="12" rx="2"/><circle cx="10" cy="10" r="2"/><path d="M6 20h14a2 2 0 0 0 2-2V9m-3-2 3 2-3 2"/></symbol>
+    <symbol id="icon-chart" viewBox="0 0 24 24"><path d="M3 3v18h18M6 16l4-5 3 2 6-7m-4 0h4v4"/></symbol>
+    <symbol id="icon-settings" viewBox="0 0 24 24"><path d="M3 6h6m4 0h8M3 12h11m4 0h3M3 18h4m4 0h10"/><circle cx="11" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="9" cy="18" r="2"/></symbol>
+    <symbol id="icon-install" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 6v9m-3-3 3 3 3-3m-5 4h4"/></symbol>
+    <symbol id="icon-code" viewBox="0 0 24 24"><path d="m8 6-6 6 6 6m8-12 6 6-6 6m-3-14-2 16"/></symbol>
+    <symbol id="icon-heart" viewBox="0 0 24 24"><path d="M12 21 3.7 12.7A5 5 0 0 1 11 5.8L12 7l1-1.2a5 5 0 0 1 7.3 6.9z"/></symbol>
+    <symbol id="icon-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+    <symbol id="icon-swap" viewBox="0 0 24 24"><path d="M3 7h17m-4-4 4 4-4 4M21 17H4m4-4-4 4 4 4"/></symbol>
+    <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></symbol>
+  </svg>
+  <div class="app-shell">
+    <main class="app" id="app">
+      <header class="app-header">
+        <button id="menu-toggle" class="menu-toggle" type="button" aria-label="Otevřít nabídku" aria-controls="app-menu" aria-haspopup="dialog" data-i18n-aria-label="openMenu"><svg class="icon" aria-hidden="true"><use href="#icon-menu"/></svg></button>
+        <h1 id="screen-title">Převodník</h1>
+        <button id="refresh" class="icon-button refresh-button" type="button" title="Aktualizovat kurzy" aria-label="Aktualizovat kurzy">
+          <svg class="icon" aria-hidden="true"><use href="#icon-refresh"/></svg>
+        </button>
+      </header>
+
+      <div class="status-line" id="rates-status" role="status" aria-live="polite"><span class="status-dot" id="status-dot"></span><span id="status-text" data-i18n="loading">Načítám kurzy…</span></div>
+
+      <div id="convert-pane" class="screen-pane" role="region" aria-labelledby="screen-title">
+      <section class="bitcoin-card" aria-labelledby="bitcoin-label">
+        <div class="card-top"><span class="card-kicker" id="bitcoin-label">BITCOIN</span><span class="bitcoin-emblem" aria-hidden="true">₿</span></div>
+        <div class="bitcoin-input-wrap"><input id="btc-input" class="bitcoin-input" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="1" aria-label="Částka v bitcoinu nebo satoshi" data-i18n-aria-label="bitcoinInput"><span id="btc-unit" class="input-unit">BTC</span></div>
+        <div class="card-bottom"><div class="unit-switch" role="group" aria-label="Jednotka bitcoinu" data-i18n-aria-label="bitcoinUnit"><button type="button" id="unit-btc" class="selected" aria-pressed="true">BTC</button><button type="button" id="unit-sats" aria-pressed="false">SATS</button></div></div>
+      </section>
+
+      <section class="currencies" aria-labelledby="currencies-heading">
+        <div class="section-heading"><h2 id="currencies-heading" data-i18n="myCurrencies">Měny</h2><div class="currency-actions"><span id="currency-count" class="count-badge">0</span><button type="button" id="sort-currencies" class="sort-toggle" aria-pressed="false">Seřadit</button></div></div>
+        <p id="sort-hint" class="sort-hint" data-i18n="sortHint" hidden>Pořadí změníte šipkami. Ukládá se automaticky.</p>
+        <div id="currency-list" class="currency-list"></div>
+        <button type="button" id="add-currency" class="add-button"><svg class="icon" aria-hidden="true"><use href="#icon-plus"/></svg><span data-i18n="addCurrency">Přidat měnu</span></button>
+      </section>
+
+      <section class="chart-preview" id="chart-preview" aria-label="Graf bitcoinu" data-i18n-aria-label="chartTitle">
+        <div class="chart-preview-top"><span id="chart-period">BTC/USD · 1 rok</span><button id="open-chart" type="button" data-i18n="openChart">Celý graf ›</button></div>
+        <div id="mini-chart" class="chart-embed tradingview-widget-container"><div class="tradingview-widget-container__widget"></div></div>
+        <p id="mini-chart-fallback" class="chart-fallback" data-i18n="chartOffline" hidden>Graf je dostupný online.</p>
+        <a class="chart-credit" href="https://www.tradingview.com/symbols/BTCUSD/?exchange=BITSTAMP" target="_blank" rel="noopener nofollow noreferrer">TradingView · BITSTAMP:BTCUSD</a>
+      </section>
+
+      </div>
+
+      <div id="travel-pane" class="screen-pane" role="region" aria-labelledby="screen-title" hidden>
+      <section class="travel-card" aria-labelledby="travel-heading">
+        <h2 id="travel-heading" class="sr-only" data-i18n="travelHeading">Měna za měnu</h2>
+        <label class="field-label" for="travel-amount" data-i18n="travelAmount">Kolik převést</label>
+        <input id="travel-amount" class="field-input" type="text" inputmode="decimal" autocomplete="off" value="100">
+        <div class="travel-pair"><label class="field-label" for="travel-from"><span data-i18n="fromCurrency">Z měny</span><select id="travel-from" class="field-select"></select></label><button type="button" id="travel-swap" class="swap-button" aria-label="Prohodit měny" data-i18n-aria-label="swapCurrencies"><svg class="icon" aria-hidden="true"><use href="#icon-swap"/></svg></button><label class="field-label" for="travel-to"><span data-i18n="toCurrency">Do měny</span><select id="travel-to" class="field-select"></select></label></div>
+        <div class="travel-result" role="status" aria-live="polite"><span data-i18n="travelReference">Podle kurzu z internetu dostanu</span><strong id="travel-value">—</strong><small id="travel-rate"></small></div>
+        <div class="travel-offer">
+          <label class="field-label" for="travel-offer-basis"><span data-i18n="exchangeRate">Kurz směnárny</span><select id="travel-offer-basis" class="field-select"><option value="from"></option><option value="to"></option></select></label>
+          <div class="travel-offer-fields"><label class="field-label" for="travel-offer-rate"><span id="travel-offer-rate-label" data-i18n="exchangeRateValue">Nabízený kurz</span><input id="travel-offer-rate" class="field-input" type="text" inputmode="decimal" autocomplete="off" placeholder="0"></label><label class="field-label" for="travel-fee"><span id="travel-fee-label" data-i18n="exchangeFee">Poplatek</span><input id="travel-fee" class="field-input" type="text" inputmode="decimal" autocomplete="off" placeholder="0"></label></div>
+          <div id="travel-comparison" class="travel-comparison" role="status" aria-live="polite" hidden><span data-i18n="exchangeReceived">Ve směnárně dostanu</span><strong id="travel-offer-value"></strong><div class="travel-difference"><b id="travel-difference"></b><small id="travel-percent"></small></div><small id="travel-source-equivalent"></small></div>
+          <p id="travel-offer-error" class="travel-offer-error" role="status" aria-live="polite" hidden></p>
+        </div>
+      </section>
+      </div>
+
+      <div id="trade-pane" class="screen-pane" role="region" aria-labelledby="screen-title" hidden>
+        <div class="trade-side" role="group" aria-label="Směr obchodu" data-i18n-aria-label="tradeSideLabel"><button type="button" id="dealer-sell" class="selected" aria-pressed="true" data-i18n="dealerSell">Prodávám BTC</button><button type="button" id="dealer-buy" aria-pressed="false" data-i18n="dealerBuy">Nakupuji BTC</button></div>
+        <div class="trade-settings">
+          <label class="field-label" for="dealer-currency"><span data-i18n="tradeCurrency">Měna obchodu</span><select id="dealer-currency" class="field-select"></select></label>
+          <div class="market-tools" id="market-tools"><label class="field-label" for="market-source"><span data-i18n="marketSource">Referenční cena</span><select id="market-source" class="field-select"><option value="live" data-i18n="marketAutomatic">Automatický kurz</option><option value="manual" data-i18n="marketManual">Zadám vlastní cenu</option></select></label><label class="field-label" id="manual-market-wrap" for="manual-market" hidden><span data-i18n="manualMarketLabel">Cena 1 BTC ve zvolené měně</span><input id="manual-market" class="field-input" type="text" inputmode="decimal" autocomplete="off"></label></div>
+          <p id="market-source-hint" class="helper-text"></p>
+          <div class="margin-control"><label class="margin-label" for="margin-percent" data-i18n="marginLabel">Úprava referenční ceny</label><div class="percent-wrap"><input id="margin-percent" type="text" inputmode="decimal" autocomplete="off" value="2" aria-describedby="margin-preview"><b>%</b></div><p id="margin-preview" class="margin-preview" aria-live="polite"></p></div>
+          <div class="amount-tools"><label class="field-label" for="dealer-amount-kind"><span data-i18n="iEnter">Zadávám</span><select id="dealer-amount-kind" class="field-select"><option value="fiat" data-i18n="fiatAmount">Částku v měně</option><option value="bitcoin" data-i18n="bitcoinAmount">Množství BTC</option></select></label><label class="field-label" for="dealer-unit"><span data-i18n="bitcoinUnit">Jednotka bitcoinu</span><select id="dealer-unit" class="field-select"><option value="BTC">BTC</option><option value="SATS">SATS</option></select></label></div>
+          <label class="field-label" for="dealer-amount" data-i18n="tradeAmount">Částka pro nabídku</label><input id="dealer-amount" class="field-input trade-amount" type="text" inputmode="decimal" autocomplete="off" value="10000">
+        </div>
+        <section class="offer-card" aria-labelledby="offer-heading" aria-live="polite"><h2 id="offer-heading" class="sr-only" data-i18n="offerHeading">Výsledek směny</h2><div class="offer-primary"><span id="offer-fiat-label"></span><strong id="offer-fiat">—</strong></div><div class="offer-primary"><span id="offer-btc-label"></span><strong id="offer-btc">—</strong></div><div class="offer-detail"><span id="offer-market-label">Tržní cena 1 BTC</span><span id="offer-market">—</span></div><div class="offer-detail"><span data-i18n="yourPrice">Vaše cena 1 BTC</span><span id="offer-price">—</span></div><div class="offer-detail"><span id="offer-difference-label">Rozdíl proti trhu</span><span id="offer-difference">—</span></div><div class="trade-actions"><button id="trade-share" type="button" data-i18n="shareTradeAction" disabled hidden>Sdílet nabídku</button><button id="trade-copy" type="button" data-i18n="copyTradeAction" disabled>Kopírovat</button></div></section>
+        <p id="trade-share-status" class="trade-share-status" role="status" aria-live="polite"></p>
+        <p id="trade-validation" class="trade-validation" role="status" aria-live="polite"></p>
+        <p class="helper-text trade-note" data-i18n="tradeNotice">Poplatky nejsou zahrnuty; BTC se zaokrouhluje na celé satoshi.</p>
+      </div>
+
+      <div id="chart-pane" class="screen-pane chart-pane" role="region" aria-labelledby="screen-title" hidden>
+        <div id="large-chart" class="large-chart tradingview-widget-container"><div class="tradingview-widget-container__widget"></div></div>
+        <p id="large-chart-fallback" class="chart-fallback" data-i18n="chartOffline" hidden>Graf vyžaduje internet.</p>
+        <a class="chart-credit" href="https://www.tradingview.com/symbols/BTCUSD/?exchange=BITSTAMP" target="_blank" rel="noopener nofollow noreferrer" data-i18n="chartOnTradingView">Otevřít na TradingView ↗</a>
+      </div>
+
+      <div id="settings-pane" class="screen-pane" role="region" aria-labelledby="screen-title" hidden>
+        <section class="settings-card" aria-label="Zobrazení částek" data-i18n-aria-label="fiatSettings">
+          <label class="field-label" for="fiat-precision"><span data-i18n="fiatPrecisionLabel">Desetinná místa v Převodníku</span><select id="fiat-precision" class="field-select"><option value="auto" data-i18n="fiatPrecisionAuto">Automaticky (doporučeno)</option><option value="0" data-i18n="fiatPrecisionZero">Celé částky</option><option value="2" data-i18n="fiatPrecisionTwo">Nejvýše 2 desetinná místa</option><option value="4" data-i18n="fiatPrecisionFour">Nejvýše 4 desetinná místa</option></select></label>
+          <p class="settings-hint" data-i18n="fiatPrecisionHint">Automaticky: CZK od 100 zaokrouhlit, jiné měny podle jejich jednotek. Velmi malé částky zůstanou viditelné. Čárka odděluje desetiny, mezera tisíce. Výpočet se nemění.</p>
+        </section>
+        <section class="settings-card sources-card" aria-label="Zdroje kurzů" data-i18n-aria-label="rateSourcesTitle">
+          <fieldset id="rate-source-controls" class="source-controls"><legend data-i18n="rateSourcesTitle">Zdroje kurzů</legend></fieldset>
+          <p class="settings-hint" data-i18n="rateSourcesHint">Vyberte alespoň jeden zdroj. Kurz odlišný o více než 5 % se při výpočtu vynechá.</p>
+          <p id="source-last" class="source-last"></p>
+          <p id="rate-warnings" class="rate-warnings" role="status" aria-live="polite" hidden></p>
+          <p id="source-selection-status" class="settings-hint" role="status" aria-live="polite"></p>
+          <button id="settings-refresh" type="button" class="sources-refresh" data-i18n="refresh">Aktualizovat kurzy</button>
+        </section>
+        <section class="settings-card" aria-label="Nastavení grafu" data-i18n-aria-label="chartSettings">
+          <label class="preview-setting" for="show-chart-preview"><span data-i18n="showChartPreview">Zobrazit malý graf v Převodníku</span><span class="switch-control"><input id="show-chart-preview" type="checkbox" role="switch" checked><span class="switch-track" aria-hidden="true"></span><span id="chart-preview-state">Zapnuto</span></span></label>
+          <label class="field-label" for="chart-range"><span data-i18n="chartRangeLabel">Období grafu</span><select id="chart-range" class="field-select"><option value="1M" data-i18n="chartMonth">1 měsíc</option><option value="3M" data-i18n="chartQuarter">3 měsíce</option><option value="12M" data-i18n="chartYear">1 rok</option><option value="60M" data-i18n="chartFiveYears">5 let</option><option value="MAX" data-i18n="chartMax">MAX</option></select></label>
+        </section>
+      </div>
+    </main>
+    <dialog id="app-menu" class="app-menu" aria-labelledby="menu-title">
+      <div class="menu-header"><span class="menu-monogram" aria-hidden="true">₿</span><h2 id="menu-title">VexlCalc</h2><button id="menu-close" class="menu-close" type="button" aria-label="Zavřít nabídku" data-i18n-aria-label="closeMenu">×</button></div>
+      <nav class="drawer-nav" aria-label="Obrazovky aplikace" data-i18n-aria-label="modeLabel">
+        <button type="button" id="tab-convert" data-mode="convert" aria-controls="convert-pane" aria-current="page"><span class="nav-icon" aria-hidden="true"><svg class="icon"><use href="#icon-convert"/></svg></span><span data-i18n="converterTab">Převodník</span><svg class="icon nav-arrow" aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+        <button type="button" id="tab-trade" data-mode="trade" aria-controls="trade-pane"><span class="nav-icon" aria-hidden="true"><svg class="icon"><use href="#icon-trade"/></svg></span><span data-i18n="tradeTab">Osobní směna</span><svg class="icon nav-arrow" aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+        <button type="button" id="tab-travel" data-mode="travel" aria-controls="travel-pane"><span class="nav-icon" aria-hidden="true"><svg class="icon"><use href="#icon-travel"/></svg></span><span data-i18n="travelHeading">Měna za měnu</span><svg class="icon nav-arrow" aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+        <button type="button" id="tab-chart" data-mode="chart" aria-controls="chart-pane"><span class="nav-icon" aria-hidden="true"><svg class="icon"><use href="#icon-chart"/></svg></span><span data-i18n="chartTab">Graf BTC</span><svg class="icon nav-arrow" aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+        <button type="button" id="tab-settings" data-mode="settings" aria-controls="settings-pane"><span class="nav-icon" aria-hidden="true"><svg class="icon"><use href="#icon-settings"/></svg></span><span data-i18n="settingsTab">Nastavení</span><svg class="icon nav-arrow" aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+      </nav>
+      <div class="menu-footer">
+        <button type="button" id="install-button" class="menu-action"><span class="menu-action-icon" aria-hidden="true"><svg class="icon"><use href="#icon-install"/></svg></span><span data-i18n="installButton">Nainstalovat aplikaci</span></button>
+        <a class="menu-action" href="https://github.com/agp-l/VexlCalc" target="_blank" rel="noopener noreferrer"><span class="menu-action-icon" aria-hidden="true"><svg class="icon"><use href="#icon-code"/></svg></span><span data-i18n="openSource">Zdrojový kód na GitHubu</span></a>
+        <button type="button" id="donate-button" class="menu-action"><span class="menu-action-icon" aria-hidden="true"><svg class="icon"><use href="#icon-heart"/></svg></span><span data-i18n="donate">Podpořit projekt</span></button>
+        <label for="language-switch" data-i18n="languageLabel">Jazyk aplikace</label><select id="language-switch" class="language-select" aria-label="Jazyk aplikace" data-i18n-aria-label="languageLabel"><option value="auto" data-i18n="automatic">Auto</option><option value="cs">Čeština</option><option value="en">English</option><option value="sk">Slovenčina</option><option value="es">Español</option><option value="pl">Polski</option><option value="de">Deutsch</option><option value="fr">Français</option><option value="pt">Português (Portugal)</option><option value="ru">Русский</option><option value="uk">Українська</option><option value="sv">Svenska</option><option value="nb">Norsk bokmål</option><option value="eo">Esperanto</option></select>
+      </div>
+    </dialog>
+  </div>
+
+  <dialog id="currency-dialog" class="currency-dialog" aria-labelledby="dialog-title"><div class="dialog-header"><div><span class="eyebrow" data-i18n="settings">NASTAVENÍ</span><h2 id="dialog-title" data-i18n="addCurrency">Přidat měnu</h2></div><button type="button" id="close-dialog" class="icon-button" aria-label="Zavřít" data-i18n-aria-label="close">×</button></div><label class="search-label" for="currency-search" data-i18n="searchLabel">Hledat podle názvu nebo kódu</label><input id="currency-search" class="search-input" type="search" autocomplete="off" placeholder="Třeba PLN nebo zlotý" data-i18n-placeholder="searchPlaceholder"><div id="currency-options" class="currency-options"></div></dialog>
+  <dialog id="trade-copy-dialog" class="currency-dialog trade-copy-dialog" aria-labelledby="trade-copy-title"><div class="dialog-header"><h2 id="trade-copy-title" data-i18n="copyTradeFallbackTitle">Zkopírovat nabídku</h2><button id="trade-copy-close" class="icon-button" type="button" aria-label="Zavřít" data-i18n-aria-label="close">×</button></div><label class="search-label" for="trade-copy-text" data-i18n="copyTradeFallbackHint">Označený text zkopírujte ručně.</label><textarea id="trade-copy-text" readonly rows="7"></textarea></dialog>
+  <dialog id="install-dialog" class="currency-dialog install-dialog" aria-labelledby="install-title"><div class="dialog-header"><div><span class="eyebrow" data-i18n="installEyebrow">APLIKACE V MOBILU</span><h2 id="install-title" data-i18n="installTitle">Přidat na plochu</h2></div><button type="button" id="close-install" class="icon-button" aria-label="Zavřít" data-i18n-aria-label="close">×</button></div><p data-i18n="installIntro">Otevřete si kalkulačku jedním klepnutím přímo z plochy.</p><p id="install-instructions"></p></dialog>
+  <dialog id="donate-dialog" class="currency-dialog donate-dialog" aria-labelledby="donate-title">
+    <div class="dialog-header"><h2 id="donate-title" data-i18n="donate">Podpořit projekt</h2><button type="button" id="close-donate" class="icon-button" aria-label="Zavřít" data-i18n-aria-label="close">×</button></div>
+    <div class="donate-method"><label for="donate-btc" data-i18n="donateBitcoin">Bitcoinová síť</label><textarea id="donate-btc" readonly rows="2" spellcheck="false">bc1pakxyfgcxujzrss5sgndsevd27h0u9yc2sxchhgdjzrcy5hc0epfsuplfx2</textarea><div class="donate-actions"><button id="copy-btc" type="button" data-i18n="copyAddress">Kopírovat BTC adresu</button><a id="open-btc-wallet" href="bitcoin:bc1pakxyfgcxujzrss5sgndsevd27h0u9yc2sxchhgdjzrcy5hc0epfsuplfx2" data-i18n="openWallet">Otevřít peněženku</a></div><p class="donate-hint" data-i18n="bitcoinHint">Platba po bitcoinové síti (on-chain); Phoenix ji přijme jako vklad.</p></div>
+    <div class="donate-method"><label for="donate-lightning" data-i18n="donateLightning">Lightning · nabídka BOLT12</label><textarea id="donate-lightning" readonly rows="3" spellcheck="false">lno1pgqppmsrse80qf0aara4slvcjxrvu6j2rp5ftmjy4yntlsmsutpkvkt6878s9djjdxvyqd662tfrqukn702zjpdf3d880gn796tfwxqx4f0ghhr2qgp0u6v74fjryur6yu6a8edrarxhlexn6c2zac6422fuhzl7wzxfn4sqxv4emt4kt78quvcs4sptd9cs3f8vxmqfe4khrd809ngvs87yjgljvxz8fcduqs522rryf5n2qmm2zekjaz2qy58e92uv063uu98kqd9v5996drn7pp49slm5jl5086f2jenlt58aqqeqcykddz9dgp7fxza5z2ywmrf9uyfxkcm90cd46kge4fsxts5udytf2mjj4z2xrvddvl37s59v037dkfrq</textarea><div class="donate-actions"><button id="copy-lightning" type="button" data-i18n="copyOffer">Kopírovat nabídku</button><a id="open-uri-wallet" href="bitcoin:?lno=lno1pgqppmsrse80qf0aara4slvcjxrvu6j2rp5ftmjy4yntlsmsutpkvkt6878s9djjdxvyqd662tfrqukn702zjpdf3d880gn796tfwxqx4f0ghhr2qgp0u6v74fjryur6yu6a8edrarxhlexn6c2zac6422fuhzl7wzxfn4sqxv4emt4kt78quvcs4sptd9cs3f8vxmqfe4khrd809ngvs87yjgljvxz8fcduqs522rryf5n2qmm2zekjaz2qy58e92uv063uu98kqd9v5996drn7pp49slm5jl5086f2jenlt58aqqeqcykddz9dgp7fxza5z2ywmrf9uyfxkcm90cd46kge4fsxts5udytf2mjj4z2xrvddvl37s59v037dkfrq" data-i18n="openWallet">Otevřít peněženku</a></div><p class="donate-hint" data-i18n="offerHint">Text lno1… a odkaz pro otevření peněženky jsou tatáž Lightning nabídka. Peněženka musí podporovat BOLT12.</p></div>
+    <p id="copy-status" class="copy-status" role="status" aria-live="polite"></p>
+  </dialog>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

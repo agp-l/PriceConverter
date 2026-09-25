@@ -1,0 +1,229 @@
+import sk from './locales/sk.js';
+import es from './locales/es.js';
+import pl from './locales/pl.js';
+import de from './locales/de.js';
+import fr from './locales/fr.js';
+import pt from './locales/pt.js';
+import ru from './locales/ru.js';
+import uk from './locales/uk.js';
+import sv from './locales/sv.js';
+import nb from './locales/nb.js';
+import eo from './locales/eo.js';
+
+// Keep this list, messages, and the language selector in sync.
+export const SUPPORTED_LANGUAGES = ['cs', 'en', 'sk', 'es', 'pl', 'de', 'fr', 'pt', 'ru', 'uk', 'sv', 'nb', 'eo'];
+const LOCALES = {cs:'cs-CZ', en:'en-US', sk:'sk-SK', es:'es-ES', pl:'pl-PL', de:'de-DE',
+  fr:'fr-FR', pt:'pt-PT', ru:'ru-RU', uk:'uk-UA', sv:'sv-SE', nb:'nb-NO', eo:'eo'};
+
+export function localeFor(language) { return LOCALES[language] || LOCALES.en; }
+
+export const messages = {
+  cs: {
+    pageTitle:'VexlCalc · BTC nabídky a měny',
+    pageDescription:'Nezávislá kalkulačka pro osobní směnu BTC a cestovní převod měn. Funguje i offline s posledním uloženým kurzem.',
+    languageLabel:'Jazyk aplikace', automatic:'Auto',
+    openMenu:'Otevřít nabídku', closeMenu:'Zavřít nabídku',
+    refresh:'Aktualizovat kurzy', refreshWait:'Další obnovení za {seconds} s', loading:'Načítám kurzy…', bitcoinInput:'Částka v bitcoinu nebo satoshi',
+    bitcoinUnit:'Jednotka bitcoinu', myCurrencies:'Měny',
+    modeLabel:'Sekce aplikace', converterTab:'Převodník', tradeTab:'Osobní směna',
+    sortCurrencies:'Seřadit', sortDone:'Hotovo', sortHint:'Pořadí změníte šipkami. Ukládá se automaticky.',
+    moveUp:'Posunout {code} výše', moveDown:'Posunout {code} níže',
+    travelHeading:'Měna za měnu', travelAmount:'Kolik převést',
+    fromCurrency:'Z měny', toCurrency:'Do měny', swapCurrencies:'Prohodit měny',
+    travelRate:'1 {from} ≈ {rate} {to}',
+    travelReference:'Podle kurzu z internetu dostanu', exchangeRate:'Kurz směnárny',
+    quoteForFrom:'Za 1 {from} dostanu {to}', quoteForTo:'Za 1 {to} platím {from}',
+    exchangeRateValue:'Nabízený kurz ({code})', exchangeFee:'Poplatek ({code})',
+    exchangeReceived:'Ve směnárně dostanu', exchangeLoss:'Přijdu o {amount}',
+    exchangeGain:'Získám navíc {amount}', exchangeEven:'Stejný výsledek',
+    exchangeEquivalent:'V přepočtu: {amount}', compareMissingRate:'Pro tuto dvojici chybí referenční kurz.',
+    invalidOfferRate:'Zadejte kladný kurz směnárny.', invalidExchangeFee:'Poplatek musí být nezáporný a nesmí převyšovat částku.',
+    chartTitle:'Graf BTC/USD', chartTab:'Graf BTC', settingsTab:'Nastavení',
+    fiatSettings:'Zobrazení částek', fiatPrecisionLabel:'Desetinná místa v Převodníku',
+    fiatPrecisionAuto:'Automaticky (doporučeno)', fiatPrecisionZero:'Celé částky',
+    fiatPrecisionTwo:'Nejvýše 2 desetinná místa', fiatPrecisionFour:'Nejvýše 4 desetinná místa',
+    fiatPrecisionHint:'Automaticky: CZK od 100 zaokrouhlit, jiné měny podle jejich jednotek. Velmi malé částky zůstanou viditelné. Čárka odděluje desetiny, mezera tisíce. Výpočet se nemění.',
+    rateSourcesTitle:'Zdroje kurzů',
+    rateSourcesHint:'Vyberte alespoň jeden zdroj. Kurz odlišný o více než 5 % se při výpočtu vynechá.',
+    sourcesLast:'Poslední kurz dodaly: {sources}', sourcesNotLoaded:'Kurz se ještě nepodařilo načíst.',
+    sourcesExcluded:'Při posledním načtení vynecháno: {details}.',
+    sourcesConflict:'Zdroje se neshodly pro {codes}; nový kurz se nepoužil.',
+    sourcesPending:'Výběr se použije po obnovení kurzu. Zatím se zobrazuje poslední uložený kurz.',
+    sourcesNextRefresh:'Výběr platí při příštím obnovení. Automaticky nejdříve za hodinu.',
+    chartSettings:'Nastavení grafu', showChartPreview:'Zobrazit malý graf v Převodníku',
+    switchOn:'Zapnuto', switchOff:'Vypnuto',
+    chartRangeLabel:'Období grafu', chartMonth:'1 měsíc', chartQuarter:'3 měsíce', chartYear:'1 rok',
+    chartFiveYears:'5 let', chartMax:'MAX',
+    chartPeriod:'BTC/USD · {period}', openChart:'Celý graf ›',
+    chartOffline:'Graf vyžaduje internet.', chartOnTradingView:'Otevřít na TradingView ↗',
+    tradeSideLabel:'Směr obchodu', dealerBuy:'Nakupuji BTC', dealerSell:'Prodávám BTC',
+    tradeCurrency:'Měna obchodu', marginLabel:'Úprava referenční ceny',
+    marketSource:'Referenční cena', marketAutomatic:'Automatický kurz', marketManual:'Zadám vlastní cenu',
+    manualMarketLabel:'Cena 1 BTC ve zvolené měně',
+    manualMarketHint:'Vlastní referenční cena platí jen v tomto otevření aplikace.',
+    marginBuyFavorable:'BTC nakoupíte o {percent} % levněji oproti referenční ceně.',
+    marginSellFavorable:'BTC prodáte o {percent} % dráž oproti referenční ceně.',
+    marginBuyUnfavorable:'Pozor: BTC nakoupíte o {percent} % dráž oproti referenční ceně.',
+    marginSellUnfavorable:'Pozor: BTC prodáte o {percent} % levněji oproti referenční ceně.',
+    marginZero:'Vaše cena je stejná jako referenční cena.',
+    marginInvalid:'Zadejte procento mezi −100 a 100.',
+    iEnter:'Zadávám', fiatAmount:'Částku v měně', bitcoinAmount:'Množství bitcoinu', tradeAmount:'Částka pro nabídku',
+    offerHeading:'Výsledek směny',
+    shareTradeTitle:'VexlCalc · nabídka směny', shareTradeBuy:'Koupím od vás {btc} za {fiat}.',
+    shareTradeSell:'Prodám vám {btc} za {fiat}.', shareTradePrice:'Kurz: 1 BTC = {price}',
+    shareTradeDate:'Vypočteno: {date}', shareTradeRateDate:'Podkladový kurz načten: {date}',
+    shareTradeAction:'Sdílet nabídku', copyTradeAction:'Kopírovat',
+    shareTradeFailed:'Sdílení se nezdařilo. Nabídku můžete zkopírovat.',
+    copyTradeFallbackTitle:'Zkopírovat nabídku', copyTradeFallbackHint:'Označený text zkopírujte ručně.',
+    fiatPaid:'Vy vyplácíte', fiatReceived:'Vy přijímáte', btcReceived:'Vy získáte BTC', btcDelivered:'Vy vydáte BTC',
+    marketPrice:'Tržní cena 1 BTC', referencePrice:'Referenční cena 1 BTC', yourPrice:'Vaše cena 1 BTC', marketDifference:'Rozdíl proti trhu', referenceDifference:'Rozdíl proti referenci',
+    tradeNoRate:'Pro {currency} nyní není kurz. Obnovte kurzy nebo zadejte vlastní referenční cenu.',
+    invalidMarketRate:'Zadejte platnou kladnou cenu za 1 BTC.',
+    invalidAmount:'Zadejte platnou nezápornou částku.',
+    invalidPercent:'Zadejte procento mezi −100 a 100.',
+    invalidTrade:'Částka je příliš malá nebo ji nelze vyjádřit v celých satoshi.',
+    tradeNotice:'Poplatky nejsou zahrnuty; BTC se zaokrouhluje na celé satoshi.',
+    addCurrency:'Přidat měnu', settings:'NASTAVENÍ',
+    installButton:'Nainstalovat aplikaci', openSource:'Zdrojový kód na GitHubu', donate:'Podpořit projekt',
+    donateBitcoin:'Bitcoinová síť', donateLightning:'Lightning · nabídka BOLT12', copyAddress:'Kopírovat BTC adresu',
+    copyOffer:'Kopírovat nabídku', openWallet:'Otevřít peněženku',
+    bitcoinHint:'Platba po bitcoinové síti (on-chain); Phoenix ji přijme jako vklad.',
+    offerHint:'Text lno1… a odkaz pro otevření peněženky jsou tatáž Lightning nabídka. Peněženka musí podporovat BOLT12.',
+    copied:'Zkopírováno.', copyManually:'Označený text zkopírujte ručně.',
+    installEyebrow:'APLIKACE V MOBILU', installTitle:'Přidat na plochu',
+    installIntro:'Otevřete si kalkulačku jedním klepnutím přímo z plochy.',
+    installIos:'V Safari otevřete Sdílet → Přidat na plochu → Přidat. Pokud vidíte volbu „Otevřít jako webovou aplikaci“, nechte ji zapnutou.',
+    installAndroid:'V nabídce prohlížeče (⋮) zvolte „Instalovat aplikaci“ nebo „Přidat na plochu“.',
+    installDesktop:'V nabídce prohlížeče zvolte „Instalovat aplikaci“ nebo „Přidat na plochu“.',
+    installHttps:'Pro instalaci otevřete zveřejněnou adresu aplikace přes HTTPS v prohlížeči telefonu.',
+    close:'Zavřít', searchLabel:'Hledat podle názvu nebo kódu', searchPlaceholder:'Třeba PLN nebo zlotý',
+    emptyState:'Zatím tu nejsou žádné měny. Přidejte si první.', noMatches:'Žádná další měna neodpovídá hledání.',
+    noRate:'Bez kurzu', noRateShort:'bez kurzu', missingRate:'Kurz pro {code} momentálně není dostupný',
+    amountIn:'Částka v měně {name}', remove:'Odebrat {name}',
+    ratesUnavailable:'Kurzy nedostupné · zkuste obnovit', ratesWaiting:'Čekám na kurzy…',
+    offline:'Offline · uložený kurz', saved:'Uložený kurz', old:'Starší kurz',
+    fresh:'{sources} · aktualizováno', sourceTitle:'Zdroje: {sources} · {date}',
+    justNow:'právě teď', minutesAgo:'před {count} min', hoursAgo:'před {count} h', daysAgo:'před {count} d',
+    sourceOne:'zdroj', sourceFew:'zdroje', sourceMany:'zdrojů'
+  },
+  en: {
+    pageTitle:'VexlCalc · Bitcoin quotes and currencies',
+    pageDescription:'An independent calculator for personal Bitcoin trades and travel currency conversion. Works offline with saved rates.',
+    languageLabel:'App language', automatic:'Auto',
+    openMenu:'Open menu', closeMenu:'Close menu',
+    refresh:'Refresh rates', refreshWait:'Refresh available in {seconds} s', loading:'Loading rates…', bitcoinInput:'Amount in bitcoin or satoshis',
+    bitcoinUnit:'Bitcoin unit', myCurrencies:'Currencies',
+    modeLabel:'App sections', converterTab:'Converter', tradeTab:'Personal trades',
+    sortCurrencies:'Reorder', sortDone:'Done', sortHint:'Use the arrows to change the order. Changes are saved automatically.',
+    moveUp:'Move {code} up', moveDown:'Move {code} down',
+    travelHeading:'Currency to currency', travelAmount:'Amount to convert',
+    fromCurrency:'From', toCurrency:'To', swapCurrencies:'Swap currencies',
+    travelRate:'1 {from} ≈ {rate} {to}',
+    travelReference:'Online reference would give me', exchangeRate:'Exchange counter rate',
+    quoteForFrom:'For 1 {from} I get {to}', quoteForTo:'For 1 {to} I pay {from}',
+    exchangeRateValue:'Quoted rate ({code})', exchangeFee:'Fee ({code})',
+    exchangeReceived:'At the counter I get', exchangeLoss:'I lose {amount}',
+    exchangeGain:'I gain {amount}', exchangeEven:'Same result',
+    exchangeEquivalent:'Equivalent: {amount}', compareMissingRate:'No reference rate for this pair.',
+    invalidOfferRate:'Enter a positive exchange rate.', invalidExchangeFee:'Fee must be non-negative and cannot exceed the amount.',
+    chartTitle:'BTC/USD chart', chartTab:'BTC chart', settingsTab:'Settings',
+    fiatSettings:'Amount display', fiatPrecisionLabel:'Decimal places in Converter',
+    fiatPrecisionAuto:'Automatic (recommended)', fiatPrecisionZero:'Whole amounts',
+    fiatPrecisionTwo:'Up to 2 decimal places', fiatPrecisionFour:'Up to 4 decimal places',
+    fiatPrecisionHint:'Auto: round CZK from 100; use each other currency’s usual decimals. Tiny amounts remain visible. Comma groups thousands, dot marks decimals. Calculations stay precise.',
+    rateSourcesTitle:'Rate sources',
+    rateSourcesHint:'Choose at least one source. Rates differing by more than 5% are excluded from the calculation.',
+    sourcesLast:'Last rate provided by: {sources}', sourcesNotLoaded:'No rate has been downloaded yet.',
+    sourcesExcluded:'Excluded from the last update: {details}.',
+    sourcesConflict:'Sources disagreed for {codes}; no new rate was used.',
+    sourcesPending:'Your selection applies after refreshing. The last saved rate is shown until then.',
+    sourcesNextRefresh:'Selection applies on the next refresh. Automatic refresh runs at most once an hour.',
+    chartSettings:'Chart settings', showChartPreview:'Show small chart in Converter',
+    switchOn:'On', switchOff:'Off',
+    chartRangeLabel:'Chart period', chartMonth:'1 month', chartQuarter:'3 months', chartYear:'1 year',
+    chartFiveYears:'5 years', chartMax:'MAX',
+    chartPeriod:'BTC/USD · {period}', openChart:'Full chart ›',
+    chartOffline:'Chart requires internet.', chartOnTradingView:'Open on TradingView ↗',
+    tradeSideLabel:'Trade direction', dealerBuy:'I buy BTC', dealerSell:'I sell BTC',
+    tradeCurrency:'Trade currency', marginLabel:'Reference price adjustment',
+    marketSource:'Reference price', marketAutomatic:'Automatic rate', marketManual:'Enter my own rate',
+    manualMarketLabel:'Price per BTC in this currency',
+    manualMarketHint:'Your custom reference price lasts only for this app session.',
+    marginBuyFavorable:'You buy BTC {percent}% below the reference price.',
+    marginSellFavorable:'You sell BTC {percent}% above the reference price.',
+    marginBuyUnfavorable:'Heads up: you buy BTC {percent}% above the reference price.',
+    marginSellUnfavorable:'Heads up: you sell BTC {percent}% below the reference price.',
+    marginZero:'Your price matches the reference price.',
+    marginInvalid:'Enter a percentage between −100 and 100.',
+    iEnter:'I enter', fiatAmount:'Fiat amount', bitcoinAmount:'Bitcoin amount', tradeAmount:'Quote amount',
+    offerHeading:'Trade result',
+    shareTradeTitle:'VexlCalc · trade offer', shareTradeBuy:'I will buy {btc} from you for {fiat}.',
+    shareTradeSell:'I will sell you {btc} for {fiat}.', shareTradePrice:'Rate: 1 BTC = {price}',
+    shareTradeDate:'Calculated: {date}', shareTradeRateDate:'Reference rate fetched: {date}',
+    shareTradeAction:'Share offer', copyTradeAction:'Copy',
+    shareTradeFailed:'Could not share. You can copy the offer instead.',
+    copyTradeFallbackTitle:'Copy offer', copyTradeFallbackHint:'Copy the selected text manually.',
+    fiatPaid:'You pay', fiatReceived:'You receive', btcReceived:'You receive BTC', btcDelivered:'You send BTC',
+    marketPrice:'Market price per BTC', referencePrice:'Reference price per BTC', yourPrice:'Your price per BTC', marketDifference:'Difference from market', referenceDifference:'Difference from reference',
+    tradeNoRate:'No rate for {currency}. Refresh rates or enter your own reference price.',
+    invalidMarketRate:'Enter a valid positive price per BTC.',
+    invalidAmount:'Enter a valid non-negative amount.',
+    invalidPercent:'Enter a percentage between −100 and 100.',
+    invalidTrade:'The amount is too small or cannot be expressed in whole satoshis.',
+    tradeNotice:'Fees are not included; BTC is rounded to whole satoshis.',
+    addCurrency:'Add currency', settings:'SETTINGS',
+    installButton:'Install app', openSource:'Source code on GitHub', donate:'Support the project',
+    donateBitcoin:'Bitcoin network', donateLightning:'Lightning · BOLT12 offer', copyAddress:'Copy BTC address',
+    copyOffer:'Copy offer', openWallet:'Open wallet',
+    bitcoinHint:'On-chain Bitcoin payment; Phoenix receives it as a deposit.',
+    offerHint:'The lno1… text and the open-wallet link are the same Lightning offer. Your wallet must support BOLT12.',
+    copied:'Copied.', copyManually:'Copy the selected text manually.',
+    installEyebrow:'ON YOUR PHONE', installTitle:'Add to Home Screen',
+    installIntro:'Open the calculator with one tap from your Home Screen.',
+    installIos:'In Safari, tap Share → Add to Home Screen → Add. If you see “Open as Web App”, leave it enabled.',
+    installAndroid:'In the browser menu (⋮), choose “Install app” or “Add to Home Screen”.',
+    installDesktop:'In the browser menu, choose “Install app” or “Add to Home Screen”.',
+    installHttps:'To install, open the published app over HTTPS in your phone browser.',
+    close:'Close', searchLabel:'Search by name or code', searchPlaceholder:'For example, PLN or zloty',
+    emptyState:'No currencies yet. Add your first one.', noMatches:'No more currencies match your search.',
+    noRate:'No rate', noRateShort:'no rate', missingRate:'No rate is currently available for {code}',
+    amountIn:'Amount in {name}', remove:'Remove {name}',
+    ratesUnavailable:'Rates unavailable · try refreshing', ratesWaiting:'Waiting for rates…',
+    offline:'Offline · saved rates', saved:'Saved rates', old:'Older rates',
+    fresh:'{sources} · updated', sourceTitle:'Sources: {sources} · {date}',
+    justNow:'just now', minutesAgo:'{count} min ago', hoursAgo:'{count} h ago', daysAgo:'{count} d ago',
+    sourceOne:'source', sourceFew:'sources', sourceMany:'sources'
+  },
+  sk, es, pl, de, fr, pt, ru, uk, sv, nb, eo
+};
+
+export function detectLanguage(languages = []) {
+  for (const locale of languages) {
+    const raw = String(locale).toLowerCase().split(/[-_]/)[0];
+    const code = raw === 'no' || raw === 'nn' ? 'nb' : raw;
+    if (SUPPORTED_LANGUAGES.includes(code)) return code;
+  }
+  return 'en';
+}
+
+export function resolveLanguage(mode, languages = []) {
+  return SUPPORTED_LANGUAGES.includes(mode) ? mode : detectLanguage(languages);
+}
+
+export function t(language, key, parameters = {}) {
+  const template = messages[language]?.[key] ?? messages.en[key] ?? key;
+  return template.replace(/\{(\w+)\}/g, (_, name) => String(parameters[name] ?? ''));
+}
+
+export function ageText(language, minutes) {
+  if (minutes < 1) return t(language,'justNow');
+  const key = minutes < 60 ? 'minutesAgo' : minutes < 1440 ? 'hoursAgo' : 'daysAgo';
+  const count = minutes < 60 ? minutes : minutes < 1440 ? Math.floor(minutes/60) : Math.floor(minutes/1440);
+  return t(language,key,{count});
+}
+
+export function sourceCount(language, count) {
+  const plural = count === 0 ? 'other' : new Intl.PluralRules(localeFor(language)).select(count);
+  const key = plural === 'one' ? 'sourceOne' : plural === 'few' ? 'sourceFew' : 'sourceMany';
+  return `${count} ${t(language,key)}`;
+}
