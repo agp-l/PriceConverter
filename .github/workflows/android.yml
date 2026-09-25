@@ -36,6 +36,7 @@ jobs:
           gradle-version: '9.4.1'
       - name: Verify bundled web app
         run: python3 android/sync-web.py --check
+      - uses: android-actions/setup-android@v4
       - name: Install Android SDK
         run: sdkmanager --install 'platforms;android-36' 'build-tools;36.0.0'
       - name: Build APK
